@@ -98,5 +98,5 @@ are absolute MCP-owned local paths; the tools do not return binary files or use
 HTTP as their primary file transport.
 
 The detailed ownership and runtime design is in
-[Architecture_Design_Plan.md](Architecture_Design_Plan.md). Tool-specific
+[MCP-pre-build algorithm design plan.md](MCP-pre-build%20algorithm%20design%20plan.md). Tool-specific
 contracts and parity criteria are under [docs/implementation](docs/implementation).

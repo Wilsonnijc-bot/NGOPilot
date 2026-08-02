@@ -1,7 +1,7 @@
 # CareFlow Paper Forms to Excel MCP Implementation Plan
 
 Status: implemented; principal lifecycle verified; release hardening tracked below  
-Architecture: [Architecture_Design_Plan.md](../../Architecture_Design_Plan.md)  
+Architecture: [MCP-pre-build algorithm design plan.md](../../MCP-pre-build%20algorithm%20design%20plan.md)  
 Public tool: `careflow_paper_forms_to_excel`  
 Pinned native dependency: CareFlow 0.4.8
 

@@ -1,7 +1,7 @@
 # Roster Copilot MCP Implementation Plan
 
 Status: implemented; full operation surface and blocked-publication parity verified  
-Architecture: [Architecture_Design_Plan.md](../../Architecture_Design_Plan.md)  
+Architecture: [MCP-pre-build algorithm design plan.md](../../MCP-pre-build%20algorithm%20design%20plan.md)  
 Public tool: `roster_copilot`  
 Pinned native dependency: RosterCopiilot 0.6.0
 

@@ -1,7 +1,7 @@
 # CareFlow Meeting Notes MCP Implementation Plan
 
 Status: implemented; principal lifecycle and transcript boundary verified  
-Architecture: [Architecture_Design_Plan.md](../../Architecture_Design_Plan.md)  
+Architecture: [MCP-pre-build algorithm design plan.md](../../MCP-pre-build%20algorithm%20design%20plan.md)  
 Public tool: `careflow_meeting_notes`  
 Pinned native dependency: CareFlow 0.4.8
 

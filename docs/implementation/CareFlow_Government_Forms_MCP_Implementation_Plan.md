@@ -1,7 +1,7 @@
 # CareFlow Government Forms MCP Implementation Plan
 
 Status: implemented; five-template discovery and both PDF strategies verified  
-Architecture: [Architecture_Design_Plan.md](../../Architecture_Design_Plan.md)  
+Architecture: [MCP-pre-build algorithm design plan.md](../../MCP-pre-build%20algorithm%20design%20plan.md)  
 Public tool: `careflow_government_forms`  
 Pinned native dependency: CareFlow 0.4.8
 
