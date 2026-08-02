@@ -8,8 +8,8 @@ workflows.
 
 - `harness bone/`: NGOPilot agent runtime, CLI, and desktop application
 - `MCPcode/`: NGOPilot MCP server and four stateful NGO workflow tools
-- `venv/CareFlow/`: CareFlow algorithm dependency source
-- `venv/RosterCopiilot/`: roster algorithm dependency source
+- `algo-dependencies/CareFlow/`: CareFlow algorithm dependency source
+- `algo-dependencies/RosterCopiilot/`: roster algorithm dependency source
 
 The product exposes one user-facing agent: NGOPilot. The MCP server runs as a
 first-party stdio extension and retains ownership of workflow validation,

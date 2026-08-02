@@ -29,8 +29,8 @@ def _source_default(relative: str) -> Path:
 
     workspace = Path(__file__).resolve().parents[3]
     if relative == "careflow/backend":
-        return workspace / "venv" / "CareFlow" / "backend"
-    return workspace / "venv" / "RosterCopiilot"
+        return workspace / "algo-dependencies" / "CareFlow" / "backend"
+    return workspace / "algo-dependencies" / "RosterCopiilot"
 
 
 def _managed_python(state_root: Path, runtime: str) -> Path:
