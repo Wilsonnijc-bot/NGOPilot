@@ -1,0 +1,3 @@
+"""Application version metadata."""
+
+APP_VERSION = "0.4.8"

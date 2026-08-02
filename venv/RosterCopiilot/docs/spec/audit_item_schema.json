@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rostercopiilot.local/schema/audit_item/v0.1",
+  "title": "AuditItem",
+  "$comment": "Design reference only. Current Pydantic AuditItem and Phase 1B provenance/publication contracts define runtime fields.",
+  "description": "A system proposal or alert requiring (or informing) human review. See human_review_policy.md for the policy that generates these.",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "schedule_version_id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "kind": {
+      "enum": [
+        "exclusive_cancellation",
+        "unassigned_task",
+        "duty_under_coverage",
+        "displacement_chain",
+        "constraint_relaxed",
+        "rule_conflict",
+        "replacement_suggestion",
+        "escort_adjustment",
+        "service_cancellation",
+        "data_gap_gender",
+        "data_gap_skill",
+        "source_ambiguity",
+        "template_deviation",
+        "refill",
+        "time_window_conflict"
+      ]
+    },
+    "severity": { "enum": ["high", "warning", "info"] },
+    "blocking": { "type": "boolean", "description": "Blocks publication of the affected scope until decided" },
+    "status": { "enum": ["pending", "approved", "rejected", "edited", "auto_approved", "escalated"] },
+    "reason": { "type": "string", "description": "Human-readable one-liner shown in the queue" },
+    "explanation": { "type": "string", "description": "Templated multi-line justification (eligibility, ranking, cascade provenance, caveats)" },
+    "evidence_refs": {
+      "type": "array",
+      "description": "Traceability: rule ids (rulebook.md), change event ids, Excel source cells, config hash",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": { "enum": ["rule", "event", "cell", "entry", "config", "metric"] },
+          "ref": { "type": "string" }
+        },
+        "required": ["type", "ref"]
+      }
+    },
+    "affected_date": { "type": "string", "format": "date" },
+    "affected_period": { "enum": ["AM", "PM", null] },
+    "affected_worker_ids": { "type": "array", "items": { "type": "string" } },
+    "affected_elder_ids": { "type": "array", "items": { "type": "string" } },
+    "original_entry": { "$ref": "https://rostercopiilot.local/schema/canonical/v0.1#/$defs/ScheduleEntry" },
+    "suggested_entry": { "$ref": "https://rostercopiilot.local/schema/canonical/v0.1#/$defs/ScheduleEntry" },
+    "alternatives": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "properties": {
+          "entry": { "$ref": "https://rostercopiilot.local/schema/canonical/v0.1#/$defs/ScheduleEntry" },
+          "why_not_first": { "type": "string" }
+        },
+        "required": ["entry"]
+      }
+    },
+    "chain": {
+      "type": "array",
+      "description": "For displacement_chain: ordered atomic steps; approve/reject as a unit",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step": { "type": "integer" },
+          "action": { "enum": ["assign", "reassign", "cancel", "absorb"] },
+          "entry_before": { "$ref": "https://rostercopiilot.local/schema/canonical/v0.1#/$defs/ScheduleEntry" },
+          "entry_after": { "$ref": "https://rostercopiilot.local/schema/canonical/v0.1#/$defs/ScheduleEntry" },
+          "explanation": { "type": "string" }
+        },
+        "required": ["step", "action", "explanation"]
+      }
+    },
+    "depends_on": {
+      "type": "array",
+      "description": "AuditItem ids whose approval this item's capacity assumptions rely on (transactional groups)",
+      "items": { "type": "string" }
+    },
+    "downstream_impact": {
+      "type": "array",
+      "description": "Entries/coverage counters that change if approved",
+      "items": {
+        "type": "object",
+        "properties": {
+          "entry_id": { "type": "string" },
+          "impact": { "type": "string" }
+        }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "properties": {
+        "decided_by": { "type": "string" },
+        "decided_at": { "type": "string", "format": "date-time" },
+        "note": { "type": "string", "description": "Required when status=rejected or a hard-rule override was made" },
+        "override_note": { "type": "string" },
+        "edited_entry": { "$ref": "https://rostercopiilot.local/schema/canonical/v0.1#/$defs/ScheduleEntry" },
+        "bulk_group_id": { "type": "string" },
+        "resulting_manual_override_id": { "type": "string" }
+      }
+    },
+    "escalated_from_severity": { "enum": ["warning", null] }
+  },
+  "required": ["id", "schedule_version_id", "created_at", "kind", "severity", "blocking", "status", "reason", "evidence_refs"],
+  "allOf": [
+    {
+      "if": { "properties": { "kind": { "const": "displacement_chain" } } },
+      "then": { "required": ["chain"] }
+    },
+    {
+      "if": { "properties": { "status": { "const": "rejected" } } },
+      "then": { "properties": { "decision": { "required": ["decided_by", "decided_at", "note"] } } }
+    }
+  ]
+}

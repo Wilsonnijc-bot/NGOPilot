@@ -1,0 +1,183 @@
+{
+  "id": "joyyou",
+  "display_name": "$2 公共交通票價優惠計劃（樂悠咭）申請表",
+  "display_name_en": "Public Transport Fare Concession Scheme for the Elderly ($2 / JoyYou Card)",
+  "source_pdf": "joyyou_apply.pdf",
+  "pdf_pages": 4,
+  "form_page": 2,
+  "fill_strategy": "acroform",
+  "status": "ready",
+  "notes": "PDF 已內建 AcroForm 25 個 widget，可直接 widget.field_value = ... 寫入。",
+  "elder_profile_keys": [
+    "name_zh", "name_en", "hkid", "phone_mobile", "phone_home", "email",
+    "address", "date_of_birth", "preferred_language"
+  ],
+  "fields": [
+    {
+      "key": "family_name_zh",
+      "label_zh": "姓氏（中文）",
+      "label_en": "Family Name",
+      "type": "text",
+      "elder_profile_path": "name_zh.family",
+      "required": true,
+      "fill": {"widget": "Family Name", "page": 2}
+    },
+    {
+      "key": "given_name_zh",
+      "label_zh": "名字（中文）",
+      "label_en": "Given Name",
+      "type": "text",
+      "elder_profile_path": "name_zh.given",
+      "required": true,
+      "fill": {"widget": "Given Name", "page": 2}
+    },
+    {
+      "key": "family_name_en",
+      "label_zh": "姓氏（英文）",
+      "label_en": "Family Name (English)",
+      "type": "text",
+      "elder_profile_path": "name_en.family",
+      "fill": {"widget": "Family Name English", "page": 2}
+    },
+    {
+      "key": "given_name_en",
+      "label_zh": "名字（英文）",
+      "label_en": "Given Name (English)",
+      "type": "text",
+      "elder_profile_path": "name_en.given",
+      "fill": {"widget": "Given Name English", "page": 2}
+    },
+    {
+      "key": "hkid_main",
+      "label_zh": "身份證號碼（首段，如 A123456）",
+      "label_en": "HKID (main)",
+      "type": "text",
+      "elder_profile_path": "hkid.main",
+      "required": true,
+      "fill": {"widget": "HKID", "page": 2}
+    },
+    {
+      "key": "hkid_check",
+      "label_zh": "身份證括號內檢查碼",
+      "label_en": "HKID Last (check digit)",
+      "type": "text",
+      "elder_profile_path": "hkid.check",
+      "required": true,
+      "fill": {"widget": "HKID Last", "page": 2}
+    },
+    {
+      "key": "mobile_area_code",
+      "label_zh": "流動電話區號",
+      "label_en": "Area Code (Mobile)",
+      "type": "text",
+      "elder_profile_path": "phone_mobile.area_code",
+      "default": "852",
+      "fill": {"widget": "Area Code Mobile", "page": 2}
+    },
+    {
+      "key": "mobile_number",
+      "label_zh": "流動電話號碼",
+      "label_en": "Mobile Number",
+      "type": "text",
+      "elder_profile_path": "phone_mobile.number",
+      "fill": {"widget": "Mobile", "page": 2}
+    },
+    {
+      "key": "home_area_code",
+      "label_zh": "住宅電話區號",
+      "label_en": "Area Code (Home)",
+      "type": "text",
+      "elder_profile_path": "phone_home.area_code",
+      "default": "852",
+      "fill": {"widget": "Area Code Home Phone", "page": 2}
+    },
+    {
+      "key": "home_number",
+      "label_zh": "住宅電話",
+      "label_en": "Home Phone",
+      "type": "text",
+      "elder_profile_path": "phone_home.number",
+      "fill": {"widget": "Home", "page": 2}
+    },
+    {
+      "key": "email",
+      "label_zh": "電郵",
+      "label_en": "E-mail",
+      "type": "text",
+      "elder_profile_path": "email",
+      "fill": {"widget": "E-mail Address", "page": 2}
+    },
+    {
+      "key": "room",
+      "label_zh": "室",
+      "label_en": "Room",
+      "type": "text",
+      "elder_profile_path": "address.room",
+      "fill": {"widget": "Room", "page": 2}
+    },
+    {
+      "key": "floor",
+      "label_zh": "樓層",
+      "label_en": "Floor",
+      "type": "text",
+      "elder_profile_path": "address.floor",
+      "fill": {"widget": "Floor", "page": 2}
+    },
+    {
+      "key": "block",
+      "label_zh": "座 / 大廈名",
+      "label_en": "Block",
+      "type": "text",
+      "elder_profile_path": "address.block",
+      "fill": {"widget": "Block", "page": 2}
+    },
+    {
+      "key": "estate",
+      "label_zh": "屋邨 / 大廈",
+      "label_en": "Estate / Building",
+      "type": "text",
+      "elder_profile_path": "address.estate",
+      "fill": {"widget": "Estate", "page": 2}
+    },
+    {
+      "key": "street",
+      "label_zh": "街道",
+      "label_en": "Street",
+      "type": "text",
+      "elder_profile_path": "address.street",
+      "fill": {"widget": "Street", "page": 2}
+    },
+    {
+      "key": "district",
+      "label_zh": "地區",
+      "label_en": "District",
+      "type": "text",
+      "elder_profile_path": "address.district",
+      "fill": {"widget": "District", "page": 2}
+    },
+    {
+      "key": "dob_day",
+      "label_zh": "出生日（日）",
+      "label_en": "DOB Day",
+      "type": "text",
+      "elder_profile_path": "date_of_birth.day",
+      "fill": {"widget": "Day", "page": 2}
+    },
+    {
+      "key": "dob_month",
+      "label_zh": "出生日（月）",
+      "label_en": "DOB Month",
+      "type": "text",
+      "elder_profile_path": "date_of_birth.month",
+      "fill": {"widget": "Month", "page": 2}
+    },
+    {
+      "key": "dob_year",
+      "label_zh": "出生日（年）",
+      "label_en": "DOB Year",
+      "type": "text",
+      "elder_profile_path": "date_of_birth.year",
+      "fill": {"widget": "Year", "page": 2}
+    }
+  ]
+}

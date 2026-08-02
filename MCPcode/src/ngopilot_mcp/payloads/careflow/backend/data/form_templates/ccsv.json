@@ -1,0 +1,142 @@
+{
+  "id": "ccsv",
+  "display_name": "長者社區照顧服務券試驗計劃申請書",
+  "display_name_en": "Community Care Service Voucher (CCSV) Application Form",
+  "source_pdf": "CCSV_application_form_(September_2023)_CHI_W3C_proceeded.pdf",
+  "pdf_pages": 7,
+  "form_page": 1,
+  "fill_strategy": "coord_anchor",
+  "status": "ready",
+  "notes": "CCSV 純掃描 PDF；男女/婚姻為圖形勾選格（無文字 anchor）暫不填，只填文字欄。",
+  "font": {
+    "family": "china-s",
+    "size": 10,
+    "color": [
+      0,
+      0,
+      0
+    ]
+  },
+  "elder_profile_keys": [
+    "name_zh",
+    "name_en",
+    "hkid",
+    "date_of_birth",
+    "address_text",
+    "phone_mobile"
+  ],
+  "fields": [
+    {
+      "key": "name_zh",
+      "label_zh": "中文姓名",
+      "type": "text",
+      "elder_profile_path": "name_zh.full",
+      "required": true,
+      "fill": {
+        "page": 1,
+        "anchor_text": "中文姓名",
+        "write_rect": [
+          155,
+          491,
+          320,
+          504
+        ]
+      }
+    },
+    {
+      "key": "name_en",
+      "label_zh": "英文姓名",
+      "type": "text",
+      "elder_profile_path": "name_en.full_upper",
+      "fill": {
+        "page": 1,
+        "anchor_text": "英文姓名",
+        "write_rect": [
+          395,
+          491,
+          580,
+          504
+        ],
+        "font": "helv"
+      }
+    },
+    {
+      "key": "hkid",
+      "label_zh": "香港身份證號碼",
+      "type": "text",
+      "elder_profile_path": "hkid.full",
+      "required": true,
+      "fill": {
+        "page": 1,
+        "anchor_text": "香港身份證",
+        "write_rect": [
+          200,
+          515,
+          350,
+          528
+        ],
+        "font": "helv",
+        "font_size": 9
+      }
+    },
+    {
+      "key": "date_of_birth",
+      "label_zh": "出生日期",
+      "type": "text",
+      "elder_profile_path": "date_of_birth.iso",
+      "fill": {
+        "page": 1,
+        "anchor_text": "出生日期",
+        "write_rect": [
+          400,
+          539,
+          580,
+          552
+        ],
+        "font": "helv",
+        "font_size": 9
+      }
+    },
+    {
+      "key": "mobile_phone",
+      "label_zh": "流動電話號碼",
+      "type": "text",
+      "elder_profile_path": "phone_mobile.full",
+      "fill": {
+        "page": 1,
+        "anchor_text": "流動電話號碼",
+        "write_rect": [
+          290,
+          587,
+          470,
+          600
+        ],
+        "font": "helv",
+        "font_size": 9
+      }
+    },
+    {
+      "key": "address",
+      "label_zh": "住址",
+      "type": "long_text",
+      "elder_profile_path": "address_text",
+      "required": true,
+      "fill": {
+        "page": 1,
+        "anchor_text": "住址",
+        "write_rect": [
+          252,
+          620,
+          580,
+          636
+        ],
+        "overflow_rect": [
+          60,
+          640,
+          580,
+          656
+        ]
+      }
+    }
+  ]
+}

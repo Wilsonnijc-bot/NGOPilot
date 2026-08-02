@@ -1,0 +1,70 @@
+{
+  "_comment": "Mock 長者資料（symbol-based，與真實 HKID/姓名無關）。給 WelfareForm.tsx 預覽 / 抽取 / 填表測試用。",
+  "_version": "v0.4.0-alpha",
+  "elder_id": "MOCK-E001",
+  "name_zh": {
+    "full": "陳大文",
+    "family": "陳",
+    "given": "大文"
+  },
+  "name_en": {
+    "full": "Chan Tai Man",
+    "full_upper": "CHAN TAI MAN",
+    "family": "CHAN",
+    "given": "TAI MAN"
+  },
+  "hkid": {
+    "main": "A123456",
+    "check": "7",
+    "full": "A123456(7)"
+  },
+  "sex": "M",
+  "marital_status": "married",
+  "preferred_language": "zh",
+  "date_of_birth": {
+    "iso": "1948-03-15",
+    "year": "1948",
+    "month": "03",
+    "day": "15"
+  },
+  "phone_home": {
+    "area_code": "852",
+    "number": "27001234",
+    "full": "27001234"
+  },
+  "phone_mobile": {
+    "area_code": "852",
+    "number": "91234567",
+    "full": "91234567"
+  },
+  "email": "chan.taiman@example.org",
+  "address": {
+    "room": "12B",
+    "floor": "8",
+    "block": "C 座",
+    "estate": "彩虹邨",
+    "street": "龍翔道",
+    "district": "黃大仙"
+  },
+  "address_text": "黃大仙龍翔道彩虹邨 C 座 8 樓 12B 室",
+  "family": {
+    "spouse_name_zh": "李美麗",
+    "spouse_hkid": "B654321(0)",
+    "children_count": 2,
+    "living_with_count": 3
+  },
+  "health": {
+    "chronic_conditions": ["高血壓", "糖尿病"],
+    "mobility": "需助行器",
+    "cognitive": "輕度認知障礙"
+  },
+  "income": {
+    "monthly_self_hkd": 0,
+    "monthly_household_hkd": 12500,
+    "sources": ["子女供養", "高齡津貼"]
+  },
+  "assets": {
+    "bank_deposit_hkd": 85000,
+    "property": false
+  }
+}

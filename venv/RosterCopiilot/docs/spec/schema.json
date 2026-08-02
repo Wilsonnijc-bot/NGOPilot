@@ -1,0 +1,356 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rostercopiilot.local/schema/canonical/v0.1",
+  "title": "RosterCopiilot Canonical Domain Model v0.1",
+  "$comment": "Reverse-engineering design reference, not the generated runtime API schema. Current Pydantic models and active Phase 1A/1B specs may add fields.",
+  "description": "Layout-independent domain model reverse-engineered from the NGO Excel workbooks, transcript, and requirements PDF. Fields marked needs_clarification must not be trusted until the NGO confirms them. See canonical_schema.md for provenance of every field.",
+  "$defs": {
+    "Id": { "type": "string", "minLength": 1 },
+    "DateStr": { "type": "string", "format": "date" },
+    "TimeStr": { "type": "string", "pattern": "^([01]?\\d|2[0-3]):[0-5]\\d$" },
+    "Period": { "enum": ["AM", "PM"] },
+    "Weekday": { "type": "integer", "minimum": 1, "maximum": 6 },
+    "Gender": { "enum": ["M", "F"] },
+    "GenderRequirement": { "enum": ["M", "F", "any", "unknown"] },
+    "OrgUnitCode": { "enum": ["EH", "IH", "ED", "AMC", "MRC", "GC", "HSS", "DECC", "KLC", "UNKNOWN"] },
+    "ServiceCategory": { "enum": ["home_visit", "escort", "center_duty", "logistics", "admin", "off"] },
+    "ServiceCode": {
+      "description": "Canonical codes; raw Excel codes map via data_dictionary.md section 1.",
+      "enum": ["EX_RO", "EX", "RO", "HC", "PC", "PC_E", "BATH", "ESC", "ESC_SLOT", "MEAL", "DUTY_AMC", "DUTY_MRC", "DUTY_GC", "DUTY_AMC_CC", "KITCHEN", "KITCHEN_MAINT", "VAN", "SPECIAL_VISIT", "PROG_KY", "PHONE_NOTIFY", "MEAL_ADMIN", "VISIT_BP", "SUPPORT_KLC", "OFF", "UNPARSED"]
+    },
+    "WeekPattern": {
+      "type": "object",
+      "properties": {
+        "kind": { "enum": ["weekly", "weeks_of_month", "odd_month", "even_month", "week1_long", "unknown"] },
+        "weeks": { "type": "array", "items": { "type": "integer", "minimum": 1, "maximum": 5 }, "uniqueItems": true },
+        "raw": { "type": "string", "description": "Original cell text, incl. Excel-date-mangled values" },
+        "unmangled_from_excel_date": { "type": "boolean", "default": false }
+      },
+      "required": ["kind", "raw"]
+    },
+    "ParseConfidence": { "enum": ["high", "medium", "low"] },
+    "SourceRef": {
+      "type": "object",
+      "description": "Traceability back to an Excel cell or event.",
+      "properties": {
+        "workbook": { "type": "string" },
+        "sheet": { "type": "string" },
+        "cell": { "type": "string" },
+        "import_batch_id": { "$ref": "#/$defs/Id" }
+      }
+    },
+    "Employee": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "display_alias": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "gender": { "oneOf": [{ "$ref": "#/$defs/Gender" }, { "const": null }], "description": "NOT available in Excel; blocking clarification" },
+        "staff_role": { "enum": ["care_worker", "case_manager", "clerical", "driver", "unknown"] },
+        "home_team": { "$ref": "#/$defs/OrgUnitCode" },
+        "work_start": { "$ref": "#/$defs/TimeStr" },
+        "work_end": { "$ref": "#/$defs/TimeStr" },
+        "daily_hours": { "type": ["number", "null"] },
+        "works_saturday_team": { "enum": ["A", "B", "none", "unknown"] },
+        "employment_type": { "enum": ["full", "part", "departed", "unknown"] },
+        "effective_from": { "oneOf": [{ "$ref": "#/$defs/DateStr" }, { "const": null }] },
+        "effective_to": { "oneOf": [{ "$ref": "#/$defs/DateStr" }, { "const": null }] },
+        "needs_clarification": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": ["string", "null"] }
+      },
+      "required": ["id", "display_alias", "staff_role", "employment_type"]
+    },
+    "Elder": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "display_alias": { "type": "string" },
+        "owning_unit": { "$ref": "#/$defs/OrgUnitCode" },
+        "gender": { "oneOf": [{ "$ref": "#/$defs/Gender" }, { "const": null }] },
+        "district": { "type": ["string", "null"] },
+        "estate": { "type": ["string", "null"] },
+        "mobility_notes": { "type": ["string", "null"] },
+        "status": { "enum": ["active", "hospitalised", "paused", "exited"] },
+        "needs_clarification": { "type": "array", "items": { "type": "string" } },
+        "notes": { "type": ["string", "null"] }
+      },
+      "required": ["id", "display_alias", "owning_unit", "status"]
+    },
+    "ServiceType": {
+      "type": "object",
+      "properties": {
+        "code": { "$ref": "#/$defs/ServiceCode" },
+        "label_zh": { "type": "string" },
+        "label_en": { "type": "string" },
+        "category": { "$ref": "#/$defs/ServiceCategory" },
+        "requires_skill": { "type": "boolean" },
+        "gender_sensitive": { "type": "boolean" },
+        "exclusive_by_default": { "type": "boolean" },
+        "default_priority": { "type": "integer", "minimum": 1 },
+        "occupies": { "enum": ["session", "half_day", "full_day"] },
+        "cancellable_when_worker_absent": { "type": "boolean" }
+      },
+      "required": ["code", "label_zh", "category", "requires_skill", "gender_sensitive", "exclusive_by_default", "default_priority", "occupies"]
+    },
+    "WorkerSkill": {
+      "type": "object",
+      "properties": {
+        "worker_id": { "$ref": "#/$defs/Id" },
+        "service_code": { "$ref": "#/$defs/ServiceCode" },
+        "level": { "enum": ["qualified", "training", "lead", "unknown"] },
+        "evidence": { "type": ["string", "null"] },
+        "effective_from": { "oneOf": [{ "$ref": "#/$defs/DateStr" }, { "const": null }] },
+        "effective_to": { "oneOf": [{ "$ref": "#/$defs/DateStr" }, { "const": null }] }
+      },
+      "required": ["worker_id", "service_code", "level"]
+    },
+    "WorkerRouteQualification": {
+      "type": "object",
+      "properties": {
+        "worker_id": { "$ref": "#/$defs/Id" },
+        "route_code": { "type": "string" },
+        "qualified": { "type": "boolean" },
+        "evidence": { "type": ["string", "null"] }
+      },
+      "required": ["worker_id", "route_code", "qualified"]
+    },
+    "FixedService": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "elder_id": { "$ref": "#/$defs/Id" },
+        "service_code": { "$ref": "#/$defs/ServiceCode" },
+        "weekday": { "$ref": "#/$defs/Weekday" },
+        "period": { "$ref": "#/$defs/Period" },
+        "session_index": { "enum": [1, 2, null] },
+        "start_time": { "oneOf": [{ "$ref": "#/$defs/TimeStr" }, { "const": null }] },
+        "end_time": { "oneOf": [{ "$ref": "#/$defs/TimeStr" }, { "const": null }] },
+        "week_pattern": { "$ref": "#/$defs/WeekPattern" },
+        "assigned_worker_id": { "oneOf": [{ "$ref": "#/$defs/Id" }, { "const": null }] },
+        "is_exclusive": { "type": "boolean" },
+        "exclusivity_evidence": { "type": ["string", "null"] },
+        "alternate_group": { "type": ["string", "null"] },
+        "district": { "type": ["string", "null"] },
+        "estate": { "type": ["string", "null"] },
+        "case_manager_alias": { "type": ["string", "null"] },
+        "priority": { "type": "integer" },
+        "effective_from": { "oneOf": [{ "$ref": "#/$defs/DateStr" }, { "const": null }] },
+        "effective_to": { "oneOf": [{ "$ref": "#/$defs/DateStr" }, { "const": null }] },
+        "source_ref": { "$ref": "#/$defs/SourceRef" },
+        "parse_confidence": { "$ref": "#/$defs/ParseConfidence" },
+        "notes": { "type": ["string", "null"] }
+      },
+      "required": ["id", "elder_id", "service_code", "weekday", "period", "week_pattern", "is_exclusive", "priority", "parse_confidence"]
+    },
+    "EscortRequest": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "service_date": { "$ref": "#/$defs/DateStr" },
+        "period": { "$ref": "#/$defs/Period" },
+        "elder_id": { "$ref": "#/$defs/Id" },
+        "appointment_time": { "oneOf": [{ "$ref": "#/$defs/TimeStr" }, { "const": null }] },
+        "appointment_time_raw": { "type": ["string", "null"] },
+        "pickup_lead_minutes": { "type": ["integer", "null"] },
+        "destination_code": { "type": ["string", "null"] },
+        "destination_raw": { "type": "string" },
+        "subject": { "type": ["string", "null"] },
+        "transport": { "type": ["string", "null"] },
+        "gender_requirement": { "$ref": "#/$defs/GenderRequirement" },
+        "preferred_worker_id": { "oneOf": [{ "$ref": "#/$defs/Id" }, { "const": null }] },
+        "preference_strength": { "enum": ["must", "prefer", null] },
+        "remarks_raw": { "type": ["string", "null"] },
+        "handler_alias": { "type": ["string", "null"] },
+        "logged_on": { "oneOf": [{ "$ref": "#/$defs/DateStr" }, { "const": null }] },
+        "logged_on_raw": { "type": ["string", "null"] },
+        "status": { "enum": ["requested", "scheduled", "cancelled", "changed"] },
+        "source_ref": { "$ref": "#/$defs/SourceRef" },
+        "parse_confidence": { "$ref": "#/$defs/ParseConfidence" }
+      },
+      "required": ["id", "service_date", "period", "elder_id", "destination_raw", "gender_requirement", "status", "parse_confidence"]
+    },
+    "CenterDutyRequirement": {
+      "type": "object",
+      "properties": {
+        "center_code": { "$ref": "#/$defs/OrgUnitCode" },
+        "weekday": { "$ref": "#/$defs/Weekday" },
+        "period": { "$ref": "#/$defs/Period" },
+        "role": { "enum": ["general", "lead", "assist", "activity", "medication", "cleaning"] },
+        "required_count": { "type": "integer", "minimum": 0 },
+        "min_count": { "type": ["integer", "null"], "description": "degradation floor; needs NGO confirmation" },
+        "source": { "enum": ["counted_from_excel", "ngo_confirmed"] }
+      },
+      "required": ["center_code", "weekday", "period", "role", "required_count", "source"]
+    },
+    "WorkerAvailability": {
+      "type": "object",
+      "properties": {
+        "worker_id": { "$ref": "#/$defs/Id" },
+        "date": { "$ref": "#/$defs/DateStr" },
+        "period": { "$ref": "#/$defs/Period" },
+        "available": { "type": "boolean" },
+        "reason": { "enum": ["working", "leave", "off_rotation", "blocked", "capacity_lock"] }
+      },
+      "required": ["worker_id", "date", "period", "available", "reason"]
+    },
+    "LeaveEvent": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "worker_id": { "$ref": "#/$defs/Id" },
+        "date": { "$ref": "#/$defs/DateStr" },
+        "scope": { "enum": ["full_day", "AM", "PM"] },
+        "leave_type": { "type": ["string", "null"] },
+        "reported_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "worker_id", "date", "scope", "reported_at"]
+    },
+    "ServiceCancellationEvent": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "elder_id": { "$ref": "#/$defs/Id" },
+        "date_from": { "$ref": "#/$defs/DateStr" },
+        "date_to": { "oneOf": [{ "$ref": "#/$defs/DateStr" }, { "const": null }], "description": "null = open-ended (e.g. hospitalisation)" },
+        "service_scope": { "enum": ["all", "specific"] },
+        "service_codes": { "type": "array", "items": { "$ref": "#/$defs/ServiceCode" } },
+        "reason": { "enum": ["hospitalised", "personal", "deceased", "other"] },
+        "reason_text": { "type": ["string", "null"] },
+        "reported_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "elder_id", "date_from", "service_scope", "reason", "reported_at"]
+    },
+    "EscortQuotaOverride": {
+      "type": "object",
+      "properties": {
+        "date": { "$ref": "#/$defs/DateStr" },
+        "period": { "$ref": "#/$defs/Period" },
+        "required_count": { "type": "integer", "minimum": 0 },
+        "source": { "enum": ["escort_table_count", "manual"] }
+      },
+      "required": ["date", "period", "required_count", "source"]
+    },
+    "ScheduleEntry": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "schedule_version_id": { "$ref": "#/$defs/Id" },
+        "date": { "$ref": "#/$defs/DateStr" },
+        "weekday": { "$ref": "#/$defs/Weekday" },
+        "period": { "$ref": "#/$defs/Period" },
+        "session_index": { "enum": [1, 2, null] },
+        "worker_id": { "oneOf": [{ "$ref": "#/$defs/Id" }, { "const": null }] },
+        "service_code": { "$ref": "#/$defs/ServiceCode" },
+        "elder_id": { "oneOf": [{ "$ref": "#/$defs/Id" }, { "const": null }] },
+        "origin_fixed_service_id": { "oneOf": [{ "$ref": "#/$defs/Id" }, { "const": null }] },
+        "origin_escort_request_id": { "oneOf": [{ "$ref": "#/$defs/Id" }, { "const": null }] },
+        "center_code": { "oneOf": [{ "$ref": "#/$defs/OrgUnitCode" }, { "const": null }] },
+        "route_code": { "type": ["string", "null"] },
+        "destination_code": { "type": ["string", "null"] },
+        "district": { "type": ["string", "null"] },
+        "start_time": { "oneOf": [{ "$ref": "#/$defs/TimeStr" }, { "const": null }] },
+        "end_time": { "oneOf": [{ "$ref": "#/$defs/TimeStr" }, { "const": null }] },
+        "source": { "enum": ["template", "weekly_fill", "system_reassigned", "manual", "import"] },
+        "status": { "enum": ["scheduled", "needs_review", "affected", "cancelled", "unassigned"] },
+        "explanation": { "type": ["string", "null"] },
+        "constraint_flags": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["id", "schedule_version_id", "date", "weekday", "period", "service_code", "source", "status"]
+    },
+    "ScheduleVersion": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "week_start": { "$ref": "#/$defs/DateStr" },
+        "parent_version_id": { "oneOf": [{ "$ref": "#/$defs/Id" }, { "const": null }] },
+        "kind": { "enum": ["baseline", "repair", "manual_edit", "import"] },
+        "created_by": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "trigger_event_ids": { "type": "array", "items": { "$ref": "#/$defs/Id" } },
+        "status": { "enum": ["draft", "under_review", "published", "superseded"] },
+        "metrics": { "type": "object" },
+        "diff_summary": {
+          "type": "object",
+          "properties": {
+            "added": { "type": "integer" },
+            "removed": { "type": "integer" },
+            "changed": { "type": "integer" },
+            "unchanged": { "type": "integer" }
+          }
+        }
+      },
+      "required": ["id", "week_start", "kind", "created_by", "created_at", "status"]
+    },
+    "ManualOverride": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "scope": { "enum": ["entry", "week", "recurring"] },
+        "pin": {
+          "type": "object",
+          "properties": {
+            "worker_id": { "oneOf": [{ "$ref": "#/$defs/Id" }, { "const": null }] },
+            "elder_id": { "oneOf": [{ "$ref": "#/$defs/Id" }, { "const": null }] },
+            "date": { "oneOf": [{ "$ref": "#/$defs/DateStr" }, { "const": null }] },
+            "weekday": { "oneOf": [{ "$ref": "#/$defs/Weekday" }, { "const": null }] },
+            "period": { "oneOf": [{ "$ref": "#/$defs/Period" }, { "const": null }] },
+            "service_code": { "oneOf": [{ "$ref": "#/$defs/ServiceCode" }, { "const": null }] }
+          }
+        },
+        "action": { "enum": ["pin_assignment", "forbid_assignment", "cancel", "free_text"] },
+        "reason": { "type": "string" },
+        "created_by": { "type": "string" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "effective_from": { "oneOf": [{ "$ref": "#/$defs/DateStr" }, { "const": null }] },
+        "effective_to": { "oneOf": [{ "$ref": "#/$defs/DateStr" }, { "const": null }] },
+        "origin_audit_item_id": { "oneOf": [{ "$ref": "#/$defs/Id" }, { "const": null }] }
+      },
+      "required": ["id", "scope", "pin", "action", "reason", "created_by", "created_at"]
+    },
+    "ExportJob": {
+      "type": "object",
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "schedule_version_id": { "$ref": "#/$defs/Id" },
+        "format": { "enum": ["division_sheet", "escort_sheet", "hc_sheet", "review_pack"] },
+        "options": { "type": "object" },
+        "status": { "enum": ["queued", "done", "failed"] },
+        "file_ref": { "type": ["string", "null"] },
+        "created_at": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "schedule_version_id", "format", "status", "created_at"]
+    },
+    "ChangeEvent": {
+      "type": "object",
+      "description": "Envelope unifying all reschedule triggers for the event queue.",
+      "properties": {
+        "id": { "$ref": "#/$defs/Id" },
+        "type": { "enum": ["leave", "cancellation", "escort_quota", "escort_new", "escort_changed", "duty_gap", "manual"] },
+        "payload": { "type": "object" },
+        "reported_at": { "type": "string", "format": "date-time" },
+        "processed_in_version_id": { "oneOf": [{ "$ref": "#/$defs/Id" }, { "const": null }] }
+      },
+      "required": ["id", "type", "payload", "reported_at"]
+    }
+  },
+  "type": "object",
+  "properties": {
+    "employees": { "type": "array", "items": { "$ref": "#/$defs/Employee" } },
+    "elders": { "type": "array", "items": { "$ref": "#/$defs/Elder" } },
+    "service_types": { "type": "array", "items": { "$ref": "#/$defs/ServiceType" } },
+    "worker_skills": { "type": "array", "items": { "$ref": "#/$defs/WorkerSkill" } },
+    "worker_route_qualifications": { "type": "array", "items": { "$ref": "#/$defs/WorkerRouteQualification" } },
+    "fixed_services": { "type": "array", "items": { "$ref": "#/$defs/FixedService" } },
+    "escort_requests": { "type": "array", "items": { "$ref": "#/$defs/EscortRequest" } },
+    "center_duty_requirements": { "type": "array", "items": { "$ref": "#/$defs/CenterDutyRequirement" } },
+    "worker_availability": { "type": "array", "items": { "$ref": "#/$defs/WorkerAvailability" } },
+    "leave_events": { "type": "array", "items": { "$ref": "#/$defs/LeaveEvent" } },
+    "service_cancellation_events": { "type": "array", "items": { "$ref": "#/$defs/ServiceCancellationEvent" } },
+    "escort_quota_overrides": { "type": "array", "items": { "$ref": "#/$defs/EscortQuotaOverride" } },
+    "schedule_versions": { "type": "array", "items": { "$ref": "#/$defs/ScheduleVersion" } },
+    "schedule_entries": { "type": "array", "items": { "$ref": "#/$defs/ScheduleEntry" } },
+    "manual_overrides": { "type": "array", "items": { "$ref": "#/$defs/ManualOverride" } },
+    "export_jobs": { "type": "array", "items": { "$ref": "#/$defs/ExportJob" } },
+    "change_events": { "type": "array", "items": { "$ref": "#/$defs/ChangeEvent" } }
+  }
+}

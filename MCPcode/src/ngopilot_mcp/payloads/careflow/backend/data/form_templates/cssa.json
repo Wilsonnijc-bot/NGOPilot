@@ -1,0 +1,276 @@
+{
+  "id": "cssa",
+  "display_name": "綜合社會保障援助計劃申請表",
+  "display_name_en": "Comprehensive Social Security Assistance (CSSA) Application Form",
+  "source_pdf": "CSSA_Registration_Form_c_2025-10.pdf",
+  "pdf_pages": 7,
+  "form_page": 1,
+  "fill_strategy": "coord_anchor",
+  "status": "ready",
+  "notes": "CSSA 純掃描 PDF。座標來自 PyMuPDF 文字 anchor 探測。",
+  "font": {
+    "family": "china-s",
+    "size": 9,
+    "color": [
+      0,
+      0,
+      0
+    ]
+  },
+  "elder_profile_keys": [
+    "name_zh",
+    "hkid",
+    "date_of_birth",
+    "sex",
+    "marital_status",
+    "address_text",
+    "phone_home",
+    "phone_mobile"
+  ],
+  "fields": [
+    {
+      "key": "name_zh",
+      "label_zh": "申請人姓名",
+      "type": "text",
+      "elder_profile_path": "name_zh.full",
+      "required": true,
+      "fill": {
+        "page": 1,
+        "anchor_text": "申請人姓名",
+        "write_rect": [
+          85,
+          113,
+          180,
+          125
+        ]
+      }
+    },
+    {
+      "key": "hkid_main",
+      "label_zh": "身份證號碼（主）",
+      "label_en": "HKID number (main)",
+      "type": "text",
+      "elder_profile_path": "hkid.main",
+      "required": true,
+      "fill": {
+        "page": 1,
+        "anchor_text": "身份證明文件號碼",
+        "write_rect": [
+          122,
+          127,
+          158,
+          139
+        ],
+        "font_size": 9,
+        "font": "helv"
+      }
+    },
+    {
+      "key": "hkid_check",
+      "label_zh": "身份證號碼（檢核碼）",
+      "label_en": "HKID number (check)",
+      "type": "text",
+      "elder_profile_path": "hkid.check",
+      "fill": {
+        "page": 1,
+        "anchor_text": "身份證明文件號碼",
+        "write_rect": [
+          162,
+          127,
+          174,
+          139
+        ],
+        "font_size": 9,
+        "font": "helv"
+      }
+    },
+    {
+      "key": "date_of_birth",
+      "label_zh": "出生日期",
+      "type": "text",
+      "elder_profile_path": "date_of_birth.iso",
+      "fill": {
+        "page": 1,
+        "anchor_text": "出生日期",
+        "write_rect": [
+          225,
+          127,
+          261,
+          138
+        ],
+        "font_size": 7,
+        "font": "helv"
+      }
+    },
+    {
+      "key": "sex_male_tick",
+      "label_zh": "性別 — 男",
+      "type": "checkbox",
+      "elder_profile_path": "sex",
+      "fill": {
+        "page": 1,
+        "anchor_text": "男",
+        "tick_rect": [
+          206,
+          113,
+          219,
+          125
+        ],
+        "tick_when_equals": "M"
+      }
+    },
+    {
+      "key": "sex_female_tick",
+      "label_zh": "性別 — 女",
+      "type": "checkbox",
+      "elder_profile_path": "sex",
+      "fill": {
+        "page": 1,
+        "anchor_text": "女",
+        "tick_rect": [
+          228,
+          113,
+          241,
+          125
+        ],
+        "tick_when_equals": "F"
+      }
+    },
+    {
+      "key": "marital_status_tick",
+      "label_zh": "婚姻狀況",
+      "type": "radio_group",
+      "elder_profile_path": "marital_status",
+      "fill": {
+        "page": 1,
+        "options": [
+          {
+            "value": "single",
+            "anchor_text": "未婚",
+            "tick_rect": [
+              295,
+              113,
+              308,
+              125
+            ]
+          },
+          {
+            "value": "married",
+            "anchor_text": "已婚",
+            "tick_rect": [
+              325,
+              113,
+              338,
+              125
+            ]
+          },
+          {
+            "value": "divorced",
+            "anchor_text": "離婚",
+            "tick_rect": [
+              354,
+              113,
+              367,
+              125
+            ]
+          },
+          {
+            "value": "separated",
+            "anchor_text": "分居",
+            "tick_rect": [
+              384,
+              113,
+              397,
+              125
+            ]
+          },
+          {
+            "value": "widowed",
+            "anchor_text": "喪偶",
+            "tick_rect": [
+              414,
+              113,
+              427,
+              125
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "key": "address",
+      "label_zh": "住址",
+      "type": "long_text",
+      "elder_profile_path": "address_text",
+      "required": true,
+      "fill": {
+        "page": 1,
+        "anchor_text": "住址",
+        "write_rect": [
+          62,
+          158,
+          560,
+          170
+        ],
+        "overflow_rect": [
+          28,
+          173,
+          560,
+          185
+        ]
+      }
+    },
+    {
+      "key": "home_phone",
+      "label_zh": "住宅電話號碼",
+      "type": "text",
+      "elder_profile_path": "phone_home.full",
+      "fill": {
+        "page": 1,
+        "anchor_text": "住宅電話號碼",
+        "write_rect": [
+          115,
+          198,
+          250,
+          210
+        ],
+        "font": "helv"
+      }
+    },
+    {
+      "key": "mobile_phone",
+      "label_zh": "流動電話號碼",
+      "type": "text",
+      "elder_profile_path": "phone_mobile.full",
+      "fill": {
+        "page": 1,
+        "anchor_text": "流動電話號碼",
+        "write_rect": [
+          350,
+          198,
+          480,
+          210
+        ],
+        "font": "helv"
+      }
+    },
+    {
+      "key": "monthly_income",
+      "label_zh": "每月入息",
+      "type": "text",
+      "elder_profile_path": "income.monthly_self_hkd",
+      "fill": {
+        "page": 1,
+        "anchor_text": "每月入息",
+        "write_rect": [
+          160,
+          141,
+          207,
+          154
+        ],
+        "font": "helv",
+        "font_size": 9
+      }
+    }
+  ]
+}

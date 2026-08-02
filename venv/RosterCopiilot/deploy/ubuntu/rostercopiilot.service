@@ -1,0 +1,67 @@
+[Unit]
+Description=RosterCopiilot API (Uvicorn, supervised demo)
+Documentation=file:/opt/rostercopiilot/current/deploy/ubuntu/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# Dedicated unprivileged service account. NEVER run as root.
+User=rostercopiilot
+Group=rostercopiilot
+
+# The release symlink points at the currently selected /opt/rostercopiilot/releases/<git-sha>.
+WorkingDirectory=/opt/rostercopiilot/current
+
+# Persistent paths, environment mode, upload cap, CORS and (optional) API token
+# all come from a root-owned env file kept OUTSIDE the repository.
+EnvironmentFile=/etc/rostercopiilot/rostercopiilot.env
+
+# Bind to loopback only: the service is never directly reachable from the
+# network. Nginx terminates TLS + access control and proxies to 127.0.0.1:8000.
+# One worker only for the demo (SQLite CAS is required regardless of workers).
+ExecStart=/opt/rostercopiilot/current/.venv/bin/python -m uvicorn app.main:app \
+    --app-dir /opt/rostercopiilot/current/backend \
+    --host 127.0.0.1 \
+    --port 8000 \
+    --workers 1 \
+    --no-access-log \
+    --timeout-keep-alive 30
+
+ExecReload=/bin/kill -HUP $MAINPID
+KillSignal=SIGINT
+Restart=on-failure
+RestartSec=3
+TimeoutStartSec=30
+TimeoutStopSec=30
+
+# --- Filesystem / privilege hardening -------------------------------------
+# StateDirectory auto-creates /var/lib/rostercopiilot owned by the service user
+# (mode 0750) and is the only writable location under ProtectSystem=strict.
+StateDirectory=rostercopiilot
+StateDirectoryMode=0750
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RestrictRealtime=true
+ReadWritePaths=/var/lib/rostercopiilot
+
+# --- Logging ---------------------------------------------------------------
+# Uvicorn access log is disabled above so request URLs (which can echo
+# workbook-derived query values) never land in the journal.
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=rostercopiilot
+
+[Install]
+WantedBy=multi-user.target

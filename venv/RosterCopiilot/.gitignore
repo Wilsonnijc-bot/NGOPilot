@@ -1,0 +1,42 @@
+# Python bytecode and tool caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.hypothesis/
+.tox/
+
+# Virtual environments and local configuration
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Packaging and test outputs
+build/
+dist/
+*.egg-info/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# Application runtime data
+data/exports/
+data/*.db
+data/*.db-*
+output/
+
+# Regenerable NGO-material intermediates (fonts, exported datasets)
+tmp/
+
+# OS, editor, log, and Office temporary files
+.DS_Store
+Thumbs.db
+*.log
+*.swp
+*.swo
+*~
+~$*.xlsx

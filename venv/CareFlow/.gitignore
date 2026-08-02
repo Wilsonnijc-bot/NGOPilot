@@ -1,0 +1,74 @@
+
+!data/exports/.gitkeep
+!data/uploads/.gitkeep
+# Additional patterns
+# Build artefacts
+# Data
+# Env
+# IDE
+# Node
+# Python
+*.egg-info/
+*.pid
+*.local
+*.log
+*.py[cod]
+*.pyo
+.DS_Store
+.env
+.env.local
+*.env
+*.env.*
+!.env.example
+!.env.example.*
+!backend/.env.example
+!backend/.env.example.*
+.idea/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.venv/
+.vite/
+.vscode/
+__pycache__/
+backend/.venv_3.11/
+backend/.venv_new/
+backend/careflow_backend.egg-info/
+backend/build/
+backend/data/.transcript_key
+backend/data/careflow.db
+backend/data/careflow.db-*
+backend/data/exports/
+backend/data/form_templates/theta_*.json
+backend/data/samples/*.png
+backend/data/samples/profiles/
+backend/data/samples/volunteer_form_*.jpg
+backend/data/templates/_*.json
+backend/data/templates/active.json
+backend/data/templates/pics/
+backend/data/templates/user_*
+backend/data/theta_pdfs/
+backend/data/transcripts/
+backend/data/uploads/
+backend/data/visit_sessions/
+backend/data/welfare_outputs/
+backend/dist/
+backend/logs/
+asset/videos/*
+!asset/videos/.gitkeep
+asset/html/*
+!asset/html/.gitkeep
+build/
+data/careflow.db*
+data/db.sqlite*
+data/exports/*
+data/uploads/*
+data/welfare_outputs/
+dist/
+frontend/dist/
+frontend/node_modules/
+frontend/node_modules*/
+frontend/tsconfig.tsbuildinfo
+frontend/vite.config.ts.timestamp-*.mjs
+node_modules/
+venv/

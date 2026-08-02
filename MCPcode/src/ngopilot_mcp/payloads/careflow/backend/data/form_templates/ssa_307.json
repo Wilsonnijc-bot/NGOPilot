@@ -1,0 +1,347 @@
+{
+  "id": "ssa_307",
+  "display_name": "公共福利金計劃申請表（高齡津貼／傷殘津貼）",
+  "display_name_en": "Social Security Allowance Scheme Application Form (SWD307)",
+  "source_pdf": "Online_SWD307_SSA_Application_Form_(Rev)(9_2023).pdf",
+  "pdf_pages": 10,
+  "form_page": 1,
+  "fill_strategy": "coord_anchor",
+  "status": "ready",
+  "notes": "SWD307 純掃描 PDF；申請人個人資料在 page 1 中段。",
+  "font": {
+    "family": "china-s",
+    "size": 10,
+    "color": [
+      0,
+      0,
+      0
+    ]
+  },
+  "elder_profile_keys": [
+    "name_zh",
+    "hkid",
+    "date_of_birth",
+    "sex",
+    "marital_status",
+    "address_text",
+    "phone_home",
+    "phone_mobile"
+  ],
+  "fields": [
+    {
+      "key": "application_date_year",
+      "label_zh": "申請日期 — 年",
+      "type": "text",
+      "elder_profile_path": "today.year",
+      "fill": {
+        "page": 1,
+        "anchor_text": "申請日期",
+        "write_rect": [
+          400,
+          92,
+          455,
+          106
+        ],
+        "font": "helv",
+        "font_size": 11,
+        "spread_chars": true
+      }
+    },
+    {
+      "key": "application_date_month",
+      "label_zh": "申請日期 — 月",
+      "type": "text",
+      "elder_profile_path": "today.month",
+      "fill": {
+        "page": 1,
+        "anchor_text": "申請日期",
+        "write_rect": [
+          468,
+          92,
+          503,
+          106
+        ],
+        "font": "helv",
+        "font_size": 11,
+        "spread_chars": true
+      }
+    },
+    {
+      "key": "application_date_day",
+      "label_zh": "申請日期 — 日",
+      "type": "text",
+      "elder_profile_path": "today.day",
+      "fill": {
+        "page": 1,
+        "anchor_text": "申請日期",
+        "write_rect": [
+          515,
+          92,
+          550,
+          106
+        ],
+        "font": "helv",
+        "font_size": 11,
+        "spread_chars": true
+      }
+    },
+    {
+      "key": "name_zh",
+      "label_zh": "姓名（中文）",
+      "type": "text",
+      "elder_profile_path": "name_zh.full",
+      "required": true,
+      "fill": {
+        "page": 1,
+        "anchor_text": "姓名",
+        "write_rect": [
+          130,
+          372,
+          400,
+          386
+        ]
+      }
+    },
+    {
+      "key": "hkid",
+      "label_zh": "身份證明文件號碼",
+      "type": "text",
+      "elder_profile_path": "hkid.full",
+      "required": true,
+      "fill": {
+        "page": 1,
+        "anchor_text": "身份證明文件號碼",
+        "write_rect": [
+          225,
+          414,
+          410,
+          428
+        ],
+        "font_size": 10,
+        "font": "helv"
+      }
+    },
+    {
+      "key": "date_of_birth_year",
+      "label_zh": "出生日期 - 年",
+      "label_en": "DOB year",
+      "type": "text",
+      "elder_profile_path": "date_of_birth.year",
+      "fill": {
+        "page": 1,
+        "anchor_text": "出生日期",
+        "write_rect": [
+          120,
+          475,
+          162,
+          488
+        ],
+        "font": "helv",
+        "font_size": 11,
+        "spread_chars": true
+      }
+    },
+    {
+      "key": "date_of_birth_month",
+      "label_zh": "出生日期 - 月",
+      "label_en": "DOB month",
+      "type": "text",
+      "elder_profile_path": "date_of_birth.month",
+      "fill": {
+        "page": 1,
+        "anchor_text": "出生日期",
+        "write_rect": [
+          180,
+          475,
+          211,
+          488
+        ],
+        "font": "helv",
+        "font_size": 11,
+        "spread_chars": true
+      }
+    },
+    {
+      "key": "date_of_birth_day",
+      "label_zh": "出生日期 - 日",
+      "label_en": "DOB day",
+      "type": "text",
+      "elder_profile_path": "date_of_birth.day",
+      "fill": {
+        "page": 1,
+        "anchor_text": "出生日期",
+        "write_rect": [
+          230,
+          475,
+          261,
+          488
+        ],
+        "font": "helv",
+        "font_size": 11,
+        "spread_chars": true
+      }
+    },
+    {
+      "key": "sex_male_tick",
+      "label_zh": "性別 — 男",
+      "type": "checkbox",
+      "elder_profile_path": "sex",
+      "fill": {
+        "page": 1,
+        "anchor_text": "男 Male",
+        "tick_rect": [
+          128,
+          444,
+          142,
+          458
+        ],
+        "tick_when_equals": "M"
+      }
+    },
+    {
+      "key": "sex_female_tick",
+      "label_zh": "性別 — 女",
+      "type": "checkbox",
+      "elder_profile_path": "sex",
+      "fill": {
+        "page": 1,
+        "anchor_text": "女 Female",
+        "tick_rect": [
+          182,
+          444,
+          196,
+          458
+        ],
+        "tick_when_equals": "F"
+      }
+    },
+    {
+      "key": "marital_status_tick",
+      "label_zh": "婚姻狀況",
+      "type": "radio_group",
+      "elder_profile_path": "marital_status",
+      "fill": {
+        "page": 1,
+        "options": [
+          {
+            "value": "single",
+            "anchor_text": "未婚",
+            "tick_rect": [
+              130,
+              614,
+              143,
+              626
+            ]
+          },
+          {
+            "value": "married",
+            "anchor_text": "已婚",
+            "tick_rect": [
+              192,
+              614,
+              205,
+              626
+            ]
+          },
+          {
+            "value": "cohabiting",
+            "anchor_text": "同居",
+            "tick_rect": [
+              258,
+              614,
+              271,
+              626
+            ]
+          },
+          {
+            "value": "separated",
+            "anchor_text": "分居",
+            "tick_rect": [
+              330,
+              614,
+              343,
+              626
+            ]
+          },
+          {
+            "value": "divorced",
+            "anchor_text": "離婚",
+            "tick_rect": [
+              402,
+              614,
+              415,
+              626
+            ]
+          },
+          {
+            "value": "widowed",
+            "anchor_text": "喪偶",
+            "tick_rect": [
+              474,
+              614,
+              487,
+              626
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "key": "address",
+      "label_zh": "住址",
+      "type": "long_text",
+      "elder_profile_path": "address_text",
+      "required": true,
+      "fill": {
+        "page": 2,
+        "anchor_text": "住址",
+        "write_rect": [
+          205,
+          141,
+          590,
+          155
+        ],
+        "overflow_rect": [
+          28,
+          162,
+          590,
+          176
+        ]
+      }
+    },
+    {
+      "key": "home_phone",
+      "label_zh": "住宅電話號碼",
+      "type": "text",
+      "elder_profile_path": "phone_home.full",
+      "fill": {
+        "page": 2,
+        "anchor_text": "住宅電話",
+        "write_rect": [
+          485,
+          192,
+          590,
+          206
+        ],
+        "font": "helv"
+      }
+    },
+    {
+      "key": "mobile_phone",
+      "label_zh": "流動電話號碼",
+      "type": "text",
+      "elder_profile_path": "phone_mobile.full",
+      "fill": {
+        "page": 2,
+        "anchor_text": "流動電話",
+        "write_rect": [
+          485,
+          251,
+          590,
+          265
+        ],
+        "font": "helv"
+      }
+    }
+  ]
+}

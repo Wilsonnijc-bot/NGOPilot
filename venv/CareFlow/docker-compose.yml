@@ -1,0 +1,60 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      args:
+        CAREFLOW_VERSION: ${CAREFLOW_VERSION:-0.4.8}
+    image: careflow-backend:${CAREFLOW_VERSION:-0.4.8}
+    container_name: careflow-backend
+    environment:
+      APP_HOST: ${APP_HOST:-0.0.0.0}
+      APP_PORT: ${APP_PORT:-8000}
+      DATA_DIR: ${DATA_DIR:-/app/data}
+      ASSET_DIR: ${ASSET_DIR:-/app/data/asset}
+      DATABASE_URL: ${DATABASE_URL:-sqlite:////app/data/careflow.db}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8080,http://localhost:5173,http://127.0.0.1:8080}
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      DEEPSEEK_BASE_URL: ${DEEPSEEK_BASE_URL:-https://api.deepseek.com}
+      DEEPSEEK_TEXT_MODEL: ${DEEPSEEK_TEXT_MODEL:-deepseek-v4-flash}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
+      AZURE_OPENAI_API_KEY: ${AZURE_OPENAI_API_KEY:-}
+      AZURE_OPENAI_DEPLOYMENT: ${AZURE_OPENAI_DEPLOYMENT:-careflow-gpt-5-mini}
+      AZURE_OPENAI_API_VERSION: ${AZURE_OPENAI_API_VERSION:-2024-12-01-preview}
+      AZURE_OPENAI_MODEL: ${AZURE_OPENAI_MODEL:-gpt-5-mini}
+      DASHSCOPE_API_KEY: ${DASHSCOPE_API_KEY:-}
+      DASHSCOPE_BASE_URL: ${DASHSCOPE_BASE_URL:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      BAILIAN_ASR_MODEL: ${BAILIAN_ASR_MODEL:-fun-asr}
+    volumes:
+      - ./backend/data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health', timeout=5).read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        CAREFLOW_VERSION: ${CAREFLOW_VERSION:-0.4.8}
+    image: careflow-frontend:${CAREFLOW_VERSION:-0.4.8}
+    container_name: careflow-frontend
+    depends_on:
+      backend:
+        condition: service_healthy
+    volumes:
+      - ./frontend/.htpasswd.local:/etc/nginx/.htpasswd:ro
+      - ./asset/videos:/usr/share/nginx/html/demo-videos:ro
+      - ./asset/html:/usr/share/nginx/html/demo-html:ro
+    ports:
+      - "127.0.0.1:8080:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped

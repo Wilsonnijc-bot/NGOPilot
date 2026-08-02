@@ -1,0 +1,13 @@
+bcrypt==4.0.1
+blinker==1.9.0
+click==8.4.2
+Flask==3.0.3
+Flask-Login==0.6.3
+Flask-Mail==0.9.1
+Flask-SQLAlchemy==3.1.1
+itsdangerous==2.2.0
+Jinja2==3.1.6
+MarkupSafe==3.0.3
+SQLAlchemy==2.0.51
+typing_extensions==4.16.0
+Werkzeug==3.0.4

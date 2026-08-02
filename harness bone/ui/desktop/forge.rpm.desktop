@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=NGOPilot
+Exec=/usr/lib/NGOPilot/NGOPilot %U
+Icon=/usr/share/pixmaps/NGOPilot.png
+Terminal=false
+Type=Application
+Categories=Development;
+MimeType=x-scheme-handler/ngopilot;

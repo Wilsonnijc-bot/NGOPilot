@@ -1,0 +1,2509 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RosterCopiilot · 自動排班示範</title>
+    <style>
+        :root {
+            --paper-50: #fcfaf3;
+            --paper-100: #f8f3e8;
+            --paper-150: #f3ecdd;
+            --paper-200: #efe7d3;
+            --paper-300: #dccfb0;
+            --ink-400: #5a544a;
+            --ink-700: #1f1c18;
+            --ink-900: #0e0c0a;
+            --cinnabar-500: #a8412c;
+            --cinnabar-700: #6b2419;
+            --sage-500: #4a6c5d;
+            --amber-500: #a8841f;
+            --paper-shadow: 0 18px 38px rgba(31, 28, 24, 0.09);
+            --rule-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+            --sans: "PingFang HK", "PingFang TC", "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
+            --serif: "Noto Serif TC", "Songti TC", "Songti SC", STSong, serif;
+            --mono: "JetBrains Mono", "SF Mono", Menlo, Consolas, monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                linear-gradient(90deg, rgba(31, 28, 24, 0.025) 1px, transparent 1px) 0 0 / 22px 22px,
+                linear-gradient(0deg, rgba(31, 28, 24, 0.018) 1px, transparent 1px) 0 0 / 22px 22px,
+                var(--paper-50);
+            color: var(--ink-700);
+            font-family: var(--sans);
+        }
+
+        button, input, select {
+            font: inherit;
+        }
+
+        button {
+            min-height: 38px;
+            border: 1px solid var(--ink-900);
+            border-radius: 4px;
+            padding: 0 13px;
+            background: var(--ink-900);
+            color: var(--paper-50);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 7px;
+            cursor: pointer;
+            white-space: nowrap;
+            box-shadow: var(--rule-shadow);
+            transition: background 140ms ease, border-color 140ms ease, transform 140ms ease;
+        }
+
+        button:hover {
+            background: var(--cinnabar-700);
+            border-color: var(--cinnabar-700);
+            transform: translateY(-1px);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+
+        .ghost {
+            background: transparent;
+            color: var(--ink-900);
+            border-color: var(--paper-300);
+        }
+
+        .ghost:hover {
+            color: #fff;
+            background: var(--ink-900);
+            border-color: var(--ink-900);
+        }
+
+        .stamp-action {
+            background: var(--cinnabar-500);
+            border-color: var(--cinnabar-500);
+        }
+
+        .stamp-action:hover {
+            background: var(--cinnabar-700);
+            border-color: var(--cinnabar-700);
+        }
+
+        input, select {
+            width: 100%;
+            min-width: 0;
+            min-height: 38px;
+            border: 0;
+            border-bottom: 1px solid var(--paper-300);
+            border-radius: 0;
+            padding: 7px 9px;
+            background: rgba(252, 250, 243, 0.64);
+            color: var(--ink-900);
+        }
+
+        input[type="file"] {
+            min-height: 58px;
+            border: 1px dashed var(--paper-300);
+            border-left: 3px solid var(--cinnabar-500);
+            border-radius: 4px;
+            background: var(--paper-50);
+            padding: 16px 12px;
+            cursor: pointer;
+        }
+
+        input:focus, select:focus {
+            outline: 0;
+            border-color: var(--cinnabar-500);
+            box-shadow: 0 1px 0 var(--cinnabar-500);
+        }
+
+        label {
+            font-size: 0.78rem;
+            color: var(--ink-400);
+            display: block;
+            margin-bottom: 6px;
+            font-family: var(--mono);
+        }
+
+        h1, h2, h3, p {
+            margin: 0;
+        }
+
+        h1 {
+            font-size: clamp(1.55rem, 2.2vw, 2.2rem);
+            letter-spacing: 0;
+            color: var(--ink-900);
+            font-family: var(--serif);
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 1.05rem;
+            letter-spacing: 0;
+            color: var(--ink-900);
+            font-family: var(--serif);
+        }
+
+        h3 {
+            font-size: 0.95rem;
+            letter-spacing: 0;
+            color: var(--ink-900);
+        }
+
+        .shell {
+            max-width: 1480px;
+            margin: 0 auto;
+            padding: 24px;
+            display: grid;
+            gap: 18px;
+        }
+
+        .topbar {
+            display: grid;
+            grid-template-columns: 62px minmax(0, 1fr) auto;
+            gap: 16px;
+            align-items: center;
+            border: 1px solid var(--paper-300);
+            background: rgba(248, 243, 232, 0.86);
+            box-shadow: var(--paper-shadow);
+            padding: 16px 18px;
+            border-radius: 4px;
+        }
+
+        .brand {
+            display: grid;
+            gap: 5px;
+        }
+
+        .seal {
+            width: 52px;
+            height: 52px;
+            border: 2px solid var(--cinnabar-500);
+            color: var(--cinnabar-500);
+            display: grid;
+            place-items: center;
+            font-family: var(--serif);
+            font-size: 1.45rem;
+            font-weight: 800;
+            line-height: 1;
+            background: rgba(252, 250, 243, 0.76);
+        }
+
+        .subtle {
+            color: var(--ink-400);
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .folio {
+            color: var(--ink-400);
+            font-family: var(--mono);
+            font-size: 0.72rem;
+            line-height: 1.45;
+        }
+
+        .status-line {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .pill {
+            min-height: 28px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid currentColor;
+            border-radius: 3px;
+            padding: 3px 8px;
+            font-size: 0.78rem;
+            color: var(--ink-400);
+            background: rgba(252, 250, 243, 0.66);
+            font-family: var(--mono);
+            white-space: nowrap;
+        }
+
+        .pill.ok {
+            color: var(--sage-500);
+        }
+
+        .pill.warn {
+            color: var(--amber-500);
+        }
+
+        .pill.bad {
+            color: var(--cinnabar-500);
+        }
+
+        .provenance {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 0;
+            border: 1px solid var(--paper-300);
+            background: rgba(252, 250, 243, 0.72);
+            box-shadow: var(--rule-shadow);
+        }
+
+        .provenance .stamp-cell {
+            padding: 11px 13px;
+            border-right: 1px solid var(--paper-300);
+            min-width: 0;
+        }
+
+        .provenance .stamp-cell:last-child {
+            border-right: 0;
+        }
+
+        .stamp-cell strong {
+            display: block;
+            color: var(--ink-900);
+            font-size: 0.85rem;
+            margin-top: 3px;
+        }
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: minmax(370px, 440px) minmax(0, 1fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .panel {
+            background: rgba(248, 243, 232, 0.92);
+            border: 1px solid var(--paper-300);
+            border-radius: 4px;
+            box-shadow: var(--paper-shadow);
+            min-width: 0;
+        }
+
+        .panel-header {
+            min-height: 52px;
+            padding: 13px 15px;
+            border-bottom: 1px solid var(--paper-300);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            background: rgba(252, 250, 243, 0.54);
+        }
+
+        .panel-body {
+            padding: 15px;
+        }
+
+        .wizard {
+            display: grid;
+            gap: 0;
+            border-top: 1px solid var(--paper-300);
+        }
+
+        .step {
+            border: 0;
+            border-bottom: 1px solid var(--paper-300);
+            border-radius: 0;
+            padding: 15px 0;
+            display: grid;
+            gap: 10px;
+            background: transparent;
+        }
+
+        .step:first-child {
+            padding-top: 0;
+        }
+
+        .step:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .step-title {
+            display: grid;
+            grid-template-columns: 28px minmax(0, 1fr);
+            gap: 9px;
+            align-items: start;
+        }
+
+        .num {
+            width: 28px;
+            height: 28px;
+            border-radius: 2px;
+            display: grid;
+            place-items: center;
+            background: transparent;
+            border: 1px solid var(--cinnabar-500);
+            color: var(--cinnabar-500);
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .field-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .field.full {
+            grid-column: 1 / -1;
+        }
+
+        .change-composer-actions {
+            grid-column: 1 / -1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            padding-top: 2px;
+        }
+
+        .change-list {
+            grid-column: 1 / -1;
+            display: grid;
+            gap: 7px;
+        }
+
+        .change-list[hidden] {
+            display: none;
+        }
+
+        .change-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 10px;
+            align-items: center;
+            border: 1px solid var(--paper-300);
+            border-left: 3px solid var(--sage-500);
+            border-radius: 4px;
+            padding: 9px 10px;
+            background: var(--paper-50);
+        }
+
+        .change-row strong {
+            display: block;
+            color: var(--ink-900);
+            font-size: 0.86rem;
+            margin-bottom: 3px;
+        }
+
+        .change-row button {
+            min-height: 32px;
+            padding: 0 9px;
+            font-size: 0.78rem;
+        }
+
+        .spin {
+            animation: rc-spin 0.9s linear infinite;
+        }
+
+        @keyframes rc-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 9px;
+            justify-content: flex-end;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .metric {
+            border: 1px solid var(--paper-300);
+            border-radius: 4px;
+            padding: 12px;
+            background: rgba(252, 250, 243, 0.68);
+            min-width: 0;
+            min-height: 82px;
+            box-shadow: var(--rule-shadow);
+        }
+
+        .metric strong {
+            display: block;
+            font-family: var(--mono);
+            font-size: 1.35rem;
+            margin-bottom: 4px;
+            color: var(--ink-900);
+        }
+
+        .metric span {
+            color: var(--ink-400);
+            font-size: 0.78rem;
+            line-height: 1.35;
+        }
+
+        .review-workspace {
+            margin-top: 14px;
+            min-width: 0;
+        }
+
+        .workspace-manager {
+            display: grid;
+            gap: 11px;
+            margin-bottom: 12px;
+            padding: 12px;
+            border: 1px solid var(--paper-300);
+            border-left: 3px solid var(--sage-500);
+            border-radius: 4px;
+            background: rgba(248, 243, 232, 0.72);
+        }
+
+        .workspace-manager-header,
+        .workspace-actions,
+        .archive-row {
+            display: grid;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .workspace-manager-header {
+            grid-template-columns: minmax(0, 1fr) auto;
+        }
+
+        .workspace-manager-header h3 {
+            margin-bottom: 2px;
+        }
+
+        .workspace-actions {
+            grid-template-columns: auto minmax(170px, 1fr) auto auto;
+        }
+
+        .workspace-actions input {
+            min-width: 0;
+        }
+
+        .archive-list {
+            display: grid;
+            gap: 7px;
+        }
+
+        .archive-row {
+            grid-template-columns: minmax(0, 1fr) auto;
+            padding: 9px 10px;
+            border: 1px solid var(--paper-300);
+            border-radius: 4px;
+            background: var(--paper-50);
+        }
+
+        .archive-row.active {
+            border-color: var(--sage-500);
+            box-shadow: inset 3px 0 0 var(--sage-500);
+        }
+
+        .archive-row strong {
+            display: block;
+            margin-bottom: 3px;
+            color: var(--ink-900);
+            font-size: 0.86rem;
+        }
+
+        .archive-row button {
+            min-height: 32px;
+            padding: 0 9px;
+            font-size: 0.78rem;
+        }
+
+        .archive-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 6px;
+        }
+
+        .list {
+            display: grid;
+            gap: 9px;
+        }
+
+        .item {
+            border: 1px solid var(--paper-300);
+            border-left: 3px solid var(--amber-500);
+            border-radius: 4px;
+            padding: 10px;
+            display: grid;
+            gap: 5px;
+            background: var(--paper-50);
+        }
+
+        .item.impact {
+            border-left-color: var(--sage-500);
+        }
+
+        .item[hidden] {
+            display: none;
+        }
+
+        .audit-card {
+            --audit-color: var(--amber-500);
+            --audit-tint: #fff8df;
+            border-left-color: var(--audit-color);
+            background: linear-gradient(90deg, var(--audit-tint), var(--paper-50) 42%);
+        }
+
+        .audit-card.decided {
+            border-left-color: var(--sage-500);
+            background: var(--paper-50);
+        }
+
+        .audit-kind-exclusive_cancellation {
+            --audit-color: #9b3344;
+            --audit-tint: #fff0f2;
+        }
+
+        .audit-kind-unassigned_task {
+            --audit-color: #b14a32;
+            --audit-tint: #fff2ec;
+        }
+
+        .audit-kind-duty_under_coverage {
+            --audit-color: #a8841f;
+            --audit-tint: #fff8df;
+        }
+
+        .audit-kind-displacement_chain {
+            --audit-color: #74548f;
+            --audit-tint: #f7f1fb;
+        }
+
+        .audit-kind-replacement_suggestion,
+        .audit-kind-refill {
+            --audit-color: #46708a;
+            --audit-tint: #eef7fb;
+        }
+
+        .audit-kind-escort_adjustment {
+            --audit-color: #27766f;
+            --audit-tint: #edf8f6;
+        }
+
+        .audit-kind-service_cancellation {
+            --audit-color: #a45c24;
+            --audit-tint: #fff5e9;
+        }
+
+        .audit-kind-data_gap {
+            --audit-color: #8a7424;
+            --audit-tint: #fffbe7;
+        }
+
+        .audit-kind-template_issue {
+            --audit-color: #626b72;
+            --audit-tint: #f2f4f5;
+        }
+
+        .audit-kind-label {
+            color: var(--audit-color);
+        }
+
+        .audit-context {
+            display: grid;
+            gap: 6px;
+            margin-top: 3px;
+            padding: 9px 10px;
+            border: 1px solid color-mix(in srgb, var(--audit-color) 24%, var(--paper-300));
+            border-radius: 4px;
+            background: rgba(252, 250, 243, 0.78);
+        }
+
+        .audit-detail {
+            display: grid;
+            grid-template-columns: 92px minmax(0, 1fr);
+            gap: 8px;
+            font-size: 0.84rem;
+            line-height: 1.45;
+        }
+
+        .audit-detail-label {
+            color: var(--ink-400);
+            font-family: var(--mono);
+            font-size: 0.74rem;
+        }
+
+        .audit-id {
+            color: var(--ink-400);
+            font-family: var(--mono);
+            font-size: 0.72rem;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .review-controls {
+            display: grid;
+            gap: 8px;
+            padding-top: 7px;
+            border-top: 1px solid var(--paper-200);
+        }
+
+        .review-fields,
+        .review-edit-fields {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .review-edit-fields[hidden] {
+            display: none;
+        }
+
+        .review-controls input,
+        .review-controls select {
+            font-size: 0.82rem;
+        }
+
+        .review-controls .actions {
+            justify-content: flex-start;
+        }
+
+        .review-controls button {
+            min-height: 34px;
+            padding: 0 10px;
+            font-size: 0.8rem;
+        }
+
+        .audit-tools {
+            display: grid;
+            gap: 9px;
+            padding: 10px;
+            border: 1px solid var(--paper-300);
+            border-radius: 4px;
+            background: rgba(252, 250, 243, 0.72);
+        }
+
+        .audit-tools[hidden] {
+            display: none;
+        }
+
+        .audit-filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .audit-filter {
+            --audit-color: var(--ink-400);
+            min-height: 30px;
+            padding: 0 9px;
+            background: transparent;
+            border-color: var(--paper-300);
+            color: var(--audit-color);
+            font-size: 0.78rem;
+        }
+
+        .audit-filter:hover,
+        .audit-filter.active {
+            background: var(--audit-color);
+            border-color: var(--audit-color);
+            color: #fff;
+        }
+
+        .audit-quick-fields {
+            display: grid;
+            grid-template-columns: minmax(130px, 0.7fr) minmax(190px, 1.3fr) auto auto;
+            gap: 7px;
+            align-items: end;
+        }
+
+        .audit-quick-fields input,
+        .audit-quick-fields select {
+            font-size: 0.82rem;
+        }
+
+        .audit-quick-fields button {
+            min-height: 38px;
+            padding: 0 10px;
+            font-size: 0.8rem;
+        }
+
+        .item.decided {
+            border-left-color: var(--sage-500);
+        }
+
+        .mono {
+            font-family: var(--mono);
+        }
+
+        .empty {
+            color: var(--ink-400);
+            padding: 18px 0;
+            font-size: 0.88rem;
+        }
+
+        .notice {
+            border-left: 3px solid var(--amber-500);
+            background: #fff8df;
+            padding: 10px 12px;
+            color: #5f4b12;
+            font-size: 0.88rem;
+            line-height: 1.45;
+            border-radius: 4px;
+        }
+
+        details.dev-tools {
+            border: 1px dashed var(--paper-300);
+            border-radius: 4px;
+            padding: 10px 12px;
+            background: rgba(248, 243, 232, 0.64);
+        }
+
+        details.dev-tools summary {
+            cursor: pointer;
+            color: var(--ink-400);
+            font-size: 0.86rem;
+        }
+
+        .toast {
+            position: fixed;
+            left: 50%;
+            bottom: 22px;
+            transform: translateX(-50%);
+            max-width: min(720px, calc(100vw - 28px));
+            display: none;
+            z-index: 30;
+            background: var(--ink-900);
+            color: var(--paper-50);
+            border-radius: 4px;
+            padding: 11px 14px;
+            box-shadow: var(--paper-shadow);
+            font-size: 0.88rem;
+            line-height: 1.4;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        @media (max-width: 1120px) {
+            .demo-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .summary-grid, .provenance {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+
+            .provenance .stamp-cell:nth-child(2) {
+                border-right: 0;
+            }
+
+            .provenance .stamp-cell:nth-child(-n + 2) {
+                border-bottom: 1px solid var(--paper-300);
+            }
+        }
+
+        @media (max-width: 700px) {
+            .shell {
+                padding: 14px;
+            }
+
+            .topbar {
+                grid-template-columns: 1fr;
+                padding: 14px;
+            }
+
+            .seal {
+                width: 44px;
+                height: 44px;
+            }
+
+            .status-line, .actions {
+                justify-content: stretch;
+            }
+
+            .field-grid, .summary-grid, .provenance {
+                grid-template-columns: 1fr;
+            }
+
+            .review-fields, .review-edit-fields {
+                grid-template-columns: 1fr;
+            }
+
+            .change-composer-actions,
+            .change-row {
+                grid-template-columns: 1fr;
+                align-items: stretch;
+            }
+
+            .change-composer-actions {
+                display: grid;
+            }
+
+            .audit-quick-fields {
+                grid-template-columns: 1fr;
+            }
+
+            .workspace-manager-header,
+            .workspace-actions,
+            .archive-row {
+                grid-template-columns: 1fr;
+            }
+
+            .audit-detail {
+                grid-template-columns: 1fr;
+                gap: 2px;
+            }
+
+            .provenance .stamp-cell,
+            .provenance .stamp-cell:nth-child(2) {
+                border-right: 0;
+                border-bottom: 1px solid var(--paper-300);
+            }
+
+            .provenance .stamp-cell:last-child {
+                border-bottom: 0;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .panel-header {
+                display: grid;
+                align-items: start;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="shell">
+    <header class="topbar">
+        <div class="seal" aria-hidden="true">排</div>
+        <div class="brand">
+            <h1>自動生成總排班表</h1>
+            <div class="folio">RosterCopiilot / 每週排班草稿 / 需人工審核</div>
+            <p class="subtle">固定分工基礎由系統內置；本次示範只需上載 HC 時間表、護送總表，再加入臨時變更。</p>
+        </div>
+        <div class="status-line">
+            <span class="pill warn" id="apiStatus"><i data-lucide="server"></i>後端檢查中</span>
+            <span class="pill" id="baseStatus"><i data-lucide="file-spreadsheet"></i>固定基礎：內置</span>
+            <span class="pill" id="runStatus"><i data-lucide="clock"></i>尚未生成</span>
+        </div>
+    </header>
+
+    <section class="provenance" aria-label="資料來源">
+        <div class="stamp-cell">
+            <span class="folio">固定基礎</span>
+            <strong>照顧員工作分工表</strong>
+        </div>
+        <div class="stamp-cell">
+            <span class="folio">上載一</span>
+            <strong>HC 時間表</strong>
+        </div>
+        <div class="stamp-cell">
+            <span class="folio">上載二</span>
+            <strong>護送個案總表</strong>
+        </div>
+        <div class="stamp-cell">
+            <span class="folio">輸出</span>
+            <strong>總排班草稿</strong>
+        </div>
+    </section>
+
+    <section class="demo-grid">
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>四步生成</h2>
+                    <p class="subtle">輸入需求，下載總表</p>
+                </div>
+                <span class="pill ok">示範</span>
+            </div>
+            <div class="panel-body">
+                <form class="wizard" id="demoForm">
+                    <div class="step">
+                        <div class="step-title">
+                            <span class="num">1</span>
+                            <div>
+                                <h3>上載 HC 時間表</h3>
+                                <p class="subtle">家居清潔、個人照顧、沖涼及 HC 表中的其他服務。</p>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="hcWorkbook">HC 時間表工作簿</label>
+                            <input type="file" id="hcWorkbook" accept=".xlsx,.xlsm" required>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-title">
+                            <span class="num">2</span>
+                            <div>
+                                <h3>上載護送總表</h3>
+                                <p class="subtle">護送日期、時段、目的地、科目及備註偏好。</p>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label for="escortWorkbook">護送個案總表工作簿</label>
+                            <input type="file" id="escortWorkbook" accept=".xlsx,.xlsm" required>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-title">
+                            <span class="num">3</span>
+                            <div>
+                                <h3>選擇目標週與變更</h3>
+                                <p class="subtle">目標週由星期一開始，選其他日子會自動對齊；可加入多項臨時變更後一次生成。</p>
+                            </div>
+                        </div>
+                        <div class="field-grid">
+                            <div class="field">
+                                <label for="weekStart">目標週星期一</label>
+                                <input type="date" id="weekStart" value="2026-01-05" required>
+                            </div>
+                            <div class="field">
+                                <label for="changeType">臨時變更</label>
+                                <select id="changeType">
+                                    <option value="">不加入</option>
+                                    <option value="escort_new">新增護送</option>
+                                    <option value="leave">同工請假</option>
+                                    <option value="elder_cancellation">長者取消服務</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="changeDate">變更日期</label>
+                                <input type="date" id="changeDate" value="2026-01-05">
+                            </div>
+                            <div class="field">
+                                <label for="changePeriod">時段</label>
+                                <select id="changePeriod">
+                                    <option value="AM">上午</option>
+                                    <option value="PM">下午</option>
+                                </select>
+                            </div>
+                            <div class="field">
+                                <label for="workerAlias">同工短名</label>
+                                <input type="text" id="workerAlias" placeholder="例：輝">
+                            </div>
+                            <div class="field">
+                                <label for="elderAlias">長者短名</label>
+                                <input type="text" id="elderAlias" placeholder="例：Y珍">
+                            </div>
+                            <div class="field">
+                                <label for="destination">目的地</label>
+                                <input type="text" id="destination" placeholder="例：東區醫院">
+                            </div>
+                            <div class="field">
+                                <label for="subject">科目</label>
+                                <input type="text" id="subject" placeholder="例：覆診">
+                            </div>
+                            <div class="field full">
+                                <label for="changeReason">備註</label>
+                                <input type="text" id="changeReason" placeholder="例：臨時新增 / 長者取消 / 同工請假">
+                            </div>
+                            <div class="change-composer-actions">
+                                <span class="pill" id="pendingChangeCount">0 項已加入</span>
+                                <button type="button" class="ghost" id="addChangeBtn"><i data-lucide="plus"></i>加入變更</button>
+                            </div>
+                            <div class="change-list" id="pendingChangeList" aria-live="polite" hidden></div>
+                        </div>
+                    </div>
+
+                    <div class="step">
+                        <div class="step-title">
+                            <span class="num">4</span>
+                            <div>
+                                <h3>生成並下載</h3>
+                                <p class="subtle">輸出為照顧員工作分工表格式，另附審核、未分配及變更摘要。</p>
+                            </div>
+                        </div>
+                        <div class="actions">
+                            <button type="button" class="ghost" id="fillSampleBtn"><i data-lucide="calendar-days"></i>填入樣本週</button>
+                            <button type="submit" class="stamp-action" id="generateBtn"><i data-lucide="wand-sparkles"></i>生成排班表</button>
+                            <button type="button" class="stamp-action" id="downloadBtn" disabled><i data-lucide="download"></i>下載審核草稿</button>
+                        </div>
+                        <div class="field" style="margin-top: 10px;">
+                            <label for="publisherActor">正式版發佈人</label>
+                            <input type="text" id="publisherActor" placeholder="主管姓名或工作電郵">
+                        </div>
+                        <div class="actions">
+                            <button type="button" class="stamp-action" id="publishBtn" disabled><i data-lucide="badge-check"></i>發佈正式版</button>
+                            <button type="button" class="ghost" id="finalDownloadBtn" disabled><i data-lucide="file-down"></i>下載正式版</button>
+                        </div>
+                        <p class="subtle" id="publicationNote">只有服務器重新驗證為「可發放」的版本，才可發佈正式版。</p>
+                    </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <h2>生成結果</h2>
+                    <p class="subtle" id="resultMeta">等待上載與生成</p>
+                </div>
+                <span class="pill" id="resultBadge">未生成</span>
+            </div>
+            <div class="panel-body">
+                <section class="workspace-manager" aria-label="工作狀態與存檔管理">
+                    <div class="workspace-manager-header">
+                        <div>
+                            <h3>工作狀態與存檔</h3>
+                            <p class="subtle" id="workspaceStatus">正在尋找上次保存的工作</p>
+                        </div>
+                        <span class="pill" id="autosaveStatus">自動保存待命</span>
+                    </div>
+                    <div class="workspace-actions">
+                        <button type="button" class="ghost" id="saveWorkspaceBtn"><i data-lucide="save"></i>保存工作狀態</button>
+                        <input type="text" id="archiveTitle" maxlength="120" aria-label="存檔名稱" placeholder="存檔名稱（可選）">
+                        <button type="button" class="stamp-action" id="archiveRunBtn" disabled><i data-lucide="archive"></i>轉為固態存檔</button>
+                        <button type="button" class="ghost" id="resumeWorkspaceBtn" disabled><i data-lucide="undo-2"></i>回到目前工作</button>
+                    </div>
+                    <p class="subtle">生成結果、審核決定及目前工作會自動保存；固態存檔是不可變的只讀快照。瀏覽器不允許恢復已選檔案，未生成前刷新後需重新選檔。</p>
+                    <div class="archive-list" id="archiveList">
+                        <div class="empty">尚未建立固態存檔。</div>
+                    </div>
+                </section>
+                <div class="notice" id="warningBox">樣本 HC 表為 2026 年 5 月，樣本護送表為 2026 年 1 月；系統會按目標週真實篩選，不會補造不在該週的需求。</div>
+                <div class="summary-grid" style="margin-top: 12px;">
+                    <div class="metric"><strong id="metricWorkers">--</strong><span>固定基礎同工欄</span></div>
+                    <div class="metric"><strong id="metricHC">--</strong><span>目標週 HC 需求</span></div>
+                    <div class="metric"><strong id="metricEscort">--</strong><span>目標週護送需求</span></div>
+                    <div class="metric"><strong id="metricEntries">--</strong><span>可落格項目</span></div>
+                    <div class="metric"><strong id="metricUnassigned">--</strong><span>未分配項目</span></div>
+                    <div class="metric"><strong id="metricAudit">--</strong><span>審核項目</span></div>
+                </div>
+
+                <section class="list review-workspace" aria-label="變更影響與審核">
+                        <div class="panel-header" style="padding-left: 0; padding-right: 0; border-bottom: 0;">
+                            <h2>臨時變更影響</h2>
+                            <span class="pill" id="impactCount">0 項變更</span>
+                        </div>
+                        <div id="impactList" class="list">
+                            <div class="empty">生成後會顯示臨時變更的影響報告。</div>
+                        </div>
+
+                        <div class="panel-header" style="padding-left: 0; padding-right: 0; border-bottom: 0;">
+                            <h2>審核項目</h2>
+                            <div class="actions">
+                                <span class="pill warn" id="gapCount">0 項待處理</span>
+                                <button type="button" class="ghost" id="revalidateBtn" disabled>重新驗證</button>
+                            </div>
+                        </div>
+                        <div class="audit-tools" id="auditTools" hidden>
+                            <div>
+                                <label>分類顯示</label>
+                                <div class="audit-filters" id="auditFilters" aria-label="審核分類篩選"></div>
+                            </div>
+                            <div class="audit-quick-fields">
+                                <div>
+                                    <label for="quickReviewer">快捷簽名</label>
+                                    <input type="text" id="quickReviewer" placeholder="審核人姓名">
+                                </div>
+                                <div>
+                                    <label for="quickReason">快捷填原因</label>
+                                    <select id="quickReason">
+                                        <option value="">選擇常用原因</option>
+                                        <option value="已核對原始工作表。">已核對原始工作表</option>
+                                        <option value="已與主管確認安排。">已與主管確認安排</option>
+                                        <option value="依服務需要批准現有安排。">依服務需要批准</option>
+                                        <option value="資料不足，暫不批准。">資料不足，暫不批准</option>
+                                        <option value="主管確認接受風險並強制略過此阻塞。">主管接受風險並強制略過</option>
+                                    </select>
+                                </div>
+                                <button type="button" class="ghost" id="applyReviewerBtn">套用簽名</button>
+                                <button type="button" class="ghost" id="applyReasonBtn">填入原因</button>
+                                <button type="button" class="stamp-action" id="bulkHardBypassBtn" disabled>一鍵強制忽略目前分類</button>
+                            </div>
+                            <p class="subtle" id="auditToolHint">快捷內容只會填入目前顯示的待審核項目；「一鍵強制忽略」會立即提交目前分類。</p>
+                        </div>
+                        <div id="auditList" class="list">
+                            <div class="empty">生成後會顯示需要人工確認的項目。</div>
+                        </div>
+                </section>
+            </div>
+        </section>
+    </section>
+
+    <details class="dev-tools">
+        <summary>開發工具</summary>
+        <div class="actions" style="margin-top: 10px; justify-content: flex-start;">
+            <button type="button" class="ghost" id="healthBtn"><i data-lucide="refresh-cw"></i>重新檢查後端</button>
+            <button type="button" class="ghost" id="sampleImportBtn"><i data-lucide="file-search"></i>檢查內置樣本</button>
+        </div>
+        <p class="subtle" id="devResult" style="margin-top: 10px;">此區只供開發驗證，不屬於用戶主流程。</p>
+    </details>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="vendor/lucide.min.js"></script>
+<script>
+    // Resolve the API origin without a hard-coded production dependency.
+    // Priority: explicit localStorage override -> local dev backend when the
+    // page is opened from file:// or a non-8000 localhost static server ->
+    // same-origin ("" prefix -> relative /api/...) for reverse-proxy deploys.
+    function defaultApiBase() {
+        const loc = window.location;
+        if (loc.protocol === "file:") return "http://localhost:8000";
+        const isLocal = loc.hostname === "localhost" || loc.hostname === "127.0.0.1";
+        if (isLocal && loc.port && loc.port !== "8000") return "http://localhost:8000";
+        return "";
+    }
+    const API_BASE = (localStorage.getItem("rc_api_base") || "").trim() || defaultApiBase();
+    const LOCAL_DRAFT_KEY = "rc_weekly_workspace_draft_v1";
+    const state = {
+        health: null,
+        run: null,
+        reviewExportUrl: null,
+        finalExportUrl: null,
+        pendingChanges: [],
+        auditFilter: "all",
+        archives: [],
+        archiveMode: false,
+        activeArchiveId: null,
+        autosaveTimer: null,
+        isBusy: false,
+        pendingReview: null
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    const PERIOD_LABELS = { AM: "上午", PM: "下午" };
+    const CHANGE_TYPE_LABELS = {
+        escort_new: "新增護送",
+        leave: "同工請假",
+        elder_cancellation: "長者取消服務"
+    };
+    const SERVICE_LABELS = {
+        "E+RO": "運動訓練",
+        HC: "家居清潔",
+        PC: "個人照顧",
+        B: "沖涼",
+        ESC: "護送",
+        D: "送飯",
+        AMC: "中心當值",
+        MRC: "中心當值",
+        GC: "中心當值",
+        KITCHEN: "廚房支援"
+    };
+    const RISK_LABELS = { high: "高", warning: "中", info: "低" };
+    const AUDIT_LABELS = {
+        exclusive_cancellation: "專屬服務取消",
+        unassigned_task: "未分配工作",
+        duty_under_coverage: "中心當值不足",
+        displacement_chain: "連鎖調動",
+        replacement_suggestion: "替補建議",
+        escort_adjustment: "護送調整",
+        service_cancellation: "服務取消",
+        refill: "補位",
+        data_gap: "資料缺口",
+        template_issue: "模板問題"
+    };
+    const AUDIT_KINDS = Object.keys(AUDIT_LABELS);
+
+    function escapeHtml(value) {
+        return String(value ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function label(map, value) {
+        return map[value] || String(value ?? "");
+    }
+
+    function renderIcons() {
+        if (window.lucide) {
+            window.lucide.createIcons({ attrs: { width: 16, height: 16, "stroke-width": 1.8 } });
+        }
+    }
+
+    function toast(message) {
+        const box = $("toast");
+        box.textContent = message;
+        box.classList.add("show");
+        window.clearTimeout(toast.timer);
+        toast.timer = window.setTimeout(() => box.classList.remove("show"), 3400);
+    }
+
+    function localizeErrorText(value) {
+        const text = String(value || "").trim();
+        if (!text) return "發生未預期錯誤，請稍後再試。";
+        const exact = {
+            "Failed to fetch": "無法連接後端服務，請確認服務已啟動。",
+            "NetworkError when attempting to fetch resource.": "網絡連線失敗，請確認後端服務已啟動。",
+            "Load failed": "網絡連線失敗，請確認後端服務已啟動。",
+            "Not Found": "找不到指定資料。",
+            "Internal Server Error": "伺服器內部發生錯誤，請稍後再試。",
+            "Field required": "此欄位必填。",
+            "Extra inputs are not permitted": "請求包含不支援的欄位。"
+        };
+        if (exact[text]) return exact[text];
+        if (/^Value error,\s*/i.test(text)) {
+            return text.replace(/^Value error,\s*/i, "");
+        }
+        if (/Input should be ['\"]approve['\"], ['\"]reject['\"] or ['\"]edit['\"]/i.test(text)) {
+            return "審核操作類型無效。";
+        }
+        if (/valid (date|datetime)/i.test(text)) return "日期或時間格式無效。";
+        if (/valid (integer|number)/i.test(text)) return "數字格式無效。";
+        return text;
+    }
+
+    function apiDetailMessage(detail, fallback) {
+        if (Array.isArray(detail)) {
+            const messages = detail.map((item) => localizeErrorText(item?.msg || item));
+            return messages.filter(Boolean).join("；") || localizeErrorText(fallback);
+        }
+        if (detail && typeof detail === "object") {
+            return localizeErrorText(detail.message || fallback);
+        }
+        return localizeErrorText(detail || fallback);
+    }
+
+    function errorMessage(error) {
+        return localizeErrorText(error?.message || error);
+    }
+
+    async function apiJson(path, options = {}) {
+        let res;
+        try {
+            res = await fetch(`${API_BASE}${path}`, options);
+        } catch (_) {
+            throw new Error("無法連接後端服務，請確認服務已啟動。");
+        }
+        if (!res.ok) {
+            const text = await res.text();
+            let message = localizeErrorText(text || res.statusText);
+            let code = null;
+            try {
+                const parsed = JSON.parse(text);
+                message = apiDetailMessage(parsed.detail, message);
+                code = parsed.detail?.code || null;
+            } catch (_) {}
+            const error = new Error(message);
+            error.status = res.status;
+            error.code = code;
+            throw error;
+        }
+        return res.json();
+    }
+
+    function setBusy(isBusy) {
+        state.isBusy = isBusy;
+        $("generateBtn").disabled = isBusy;
+        $("fillSampleBtn").disabled = isBusy;
+        $("saveWorkspaceBtn").disabled = isBusy;
+        $("archiveRunBtn").disabled = isBusy || !state.run || state.archiveMode;
+        $("resumeWorkspaceBtn").disabled = isBusy || !state.archiveMode;
+        $("downloadBtn").disabled = isBusy || !state.reviewExportUrl || state.archiveMode;
+        $("revalidateBtn").disabled = isBusy || !state.run || state.archiveMode;
+        $("bulkHardBypassBtn").disabled = isBusy || state.archiveMode
+            || !state.run || visiblePendingAuditCards().length === 0;
+        // Review-card actions and inputs must go dark the moment one review
+        // request is in flight, so a double-click cannot submit twice.
+        // data-locked marks controls that stay disabled for their own reasons.
+        document.querySelectorAll(
+            "#auditList [data-review-action], #auditList [data-review-field], #auditList [data-edit-field]"
+        ).forEach((control) => {
+            control.disabled = isBusy || control.hasAttribute("data-locked");
+        });
+        $("applyReviewerBtn").disabled = isBusy || state.archiveMode;
+        $("applyReasonBtn").disabled = isBusy || state.archiveMode;
+        const serverReady = !state.archiveMode
+            && state.run?.reconciliation?.publication_state === "ready";
+        $("publishBtn").disabled = isBusy || !serverReady;
+        $("finalDownloadBtn").disabled = isBusy || !serverReady || !state.finalExportUrl;
+    }
+
+    function beginButtonProcessing(button) {
+        if (!button) return () => {};
+        const original = button.innerHTML;
+        button.innerHTML = `<i data-lucide="loader-2" class="spin"></i>處理中…`;
+        renderIcons();
+        return () => {
+            if (document.body.contains(button)) button.innerHTML = original;
+        };
+    }
+
+    function reviewIdempotencyKey(identity) {
+        // One logical decision keeps one idempotency key across retries, so a
+        // network retry replays instead of double-committing; any change to
+        // the identity (new source version, different action/fields) mints a
+        // fresh key for what is genuinely a new decision.
+        const identityJson = JSON.stringify(identity);
+        if (state.pendingReview?.identity === identityJson) {
+            return state.pendingReview.key;
+        }
+        state.pendingReview = { identity: identityJson, key: newIdempotencyKey() };
+        return state.pendingReview.key;
+    }
+
+    function isStaleReviewError(error) {
+        return error?.status === 409 && [
+            "STALE_SCHEDULE_VERSION",
+            "STALE_CONTENT_HASH",
+            "AUDIT_ITEM_ALREADY_DECIDED",
+            "REVIEW_PERSISTENCE_CONFLICT",
+            "IDEMPOTENCY_KEY_REUSED"
+        ].includes(error?.code);
+    }
+
+    async function reloadCurrentRun(reason) {
+        state.pendingReview = null;
+        try {
+            const run = await apiJson(`/api/demo/weekly-roster/${state.run.run_id}`);
+            activateRun(run, { autosave: false });
+            toast(`${reason}；已自動重新載入最新排班版本，請在最新版本上再操作。`);
+        } catch (err) {
+            toast(`${reason}；自動重新載入失敗：${errorMessage(err)}，請手動刷新頁面。`);
+        }
+    }
+
+    function localDraftPayload() {
+        return {
+            weekStart: $("weekStart").value,
+            changeDate: $("changeDate").value,
+            pendingChanges: state.pendingChanges,
+            quickReviewer: $("quickReviewer").value,
+            quickReason: $("quickReason").value,
+            publisherActor: $("publisherActor").value,
+            archiveTitle: $("archiveTitle").value,
+            auditFilter: state.auditFilter
+        };
+    }
+
+    function saveLocalDraft() {
+        localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify(localDraftPayload()));
+    }
+
+    function restoreLocalDraft() {
+        try {
+            const draft = JSON.parse(localStorage.getItem(LOCAL_DRAFT_KEY) || "null");
+            if (!draft || typeof draft !== "object") return;
+            if (draft.weekStart) $("weekStart").value = draft.weekStart;
+            if (draft.changeDate) $("changeDate").value = draft.changeDate;
+            state.pendingChanges = Array.isArray(draft.pendingChanges) ? draft.pendingChanges : [];
+            $("quickReviewer").value = draft.quickReviewer || "";
+            $("quickReason").value = draft.quickReason || "";
+            $("publisherActor").value = draft.publisherActor || "";
+            $("archiveTitle").value = draft.archiveTitle || "";
+            state.auditFilter = draft.auditFilter || "all";
+        } catch (_) {
+            localStorage.removeItem(LOCAL_DRAFT_KEY);
+        }
+        renderPendingChanges();
+    }
+
+    function formatSavedAt(value) {
+        if (!value) return "";
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return "";
+        return new Intl.DateTimeFormat("zh-HK", {
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+        }).format(date);
+    }
+
+    function setAutosaveStatus(text, className = "") {
+        $("autosaveStatus").className = `pill ${className}`.trim();
+        $("autosaveStatus").textContent = text;
+    }
+
+    function activateRun(run, { archive = null, autosave = true } = {}) {
+        state.run = run;
+        state.archiveMode = Boolean(archive);
+        state.activeArchiveId = archive?.archive_id || null;
+        state.reviewExportUrl = state.archiveMode
+            ? null
+            : run.review_export_allowed ? run.export_url : null;
+        state.finalExportUrl = state.archiveMode ? null : run.final_export_url || null;
+        renderRun(run);
+        renderArchives();
+        setBusy(false);
+        if (autosave && !state.archiveMode) scheduleWorkspaceAutosave();
+    }
+
+    function scheduleWorkspaceAutosave() {
+        saveLocalDraft();
+        if (!state.run || state.archiveMode) return;
+        window.clearTimeout(state.autosaveTimer);
+        setAutosaveStatus("自動保存中", "warn");
+        state.autosaveTimer = window.setTimeout(() => {
+            saveWorkspace({ silent: true });
+        }, 550);
+    }
+
+    async function saveWorkspace({ silent = false } = {}) {
+        saveLocalDraft();
+        if (!state.run || state.archiveMode) {
+            setAutosaveStatus("表單草稿已保存", "ok");
+            if (!silent) toast("表單草稿已保存在此瀏覽器。生成排班後會同步保存目前工作。");
+            return;
+        }
+        try {
+            const saved = await apiJson("/api/demo/workspace", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ run_id: state.run.run_id })
+            });
+            const time = formatSavedAt(saved.saved_at);
+            $("workspaceStatus").textContent = `目前工作：${state.run.week_start} · 批次 ${state.run.run_id}${time ? ` · 保存於 ${time}` : ""}`;
+            setAutosaveStatus("已自動保存", "ok");
+            if (!silent) toast("目前工作狀態已保存。刷新後會自動恢復。");
+        } catch (err) {
+            setAutosaveStatus("保存失敗", "bad");
+            if (!silent) toast(`保存工作狀態失敗：${errorMessage(err)}`);
+        }
+    }
+
+    async function restoreWorkspace({ notify = false } = {}) {
+        try {
+            const workspace = await apiJson("/api/demo/workspace");
+            if (!workspace.current_run_id) {
+                $("workspaceStatus").textContent = "尚未保存排班工作；表單草稿會保存在此瀏覽器。";
+                setAutosaveStatus("自動保存待命");
+                return;
+            }
+            const run = await apiJson(`/api/demo/weekly-roster/${workspace.current_run_id}`);
+            activateRun(run, { autosave: false });
+            const time = formatSavedAt(workspace.saved_at);
+            $("workspaceStatus").textContent = `已恢復：${run.week_start} · 批次 ${run.run_id}${time ? ` · 保存於 ${time}` : ""}`;
+            setAutosaveStatus("已恢復上次工作", "ok");
+            if (notify) toast("已回到目前保存的工作。");
+        } catch (err) {
+            $("workspaceStatus").textContent = `無法恢復上次工作：${errorMessage(err)}`;
+            setAutosaveStatus("恢復失敗", "bad");
+        }
+    }
+
+    async function loadArchives() {
+        try {
+            const payload = await apiJson("/api/demo/archives");
+            state.archives = payload.archives || [];
+            renderArchives();
+        } catch (err) {
+            $("archiveList").innerHTML = `<div class="empty">無法讀取存檔：${escapeHtml(errorMessage(err))}</div>`;
+        }
+    }
+
+    function renderArchives() {
+        if (!state.archives.length) {
+            $("archiveList").innerHTML = `<div class="empty">尚未建立固態存檔。</div>`;
+            return;
+        }
+        $("archiveList").innerHTML = state.archives.map((archive) => {
+            const active = archive.archive_id === state.activeArchiveId;
+            const time = formatSavedAt(archive.created_at);
+            return `
+                <div class="archive-row ${active ? "active" : ""}">
+                    <div>
+                        <strong>${escapeHtml(archive.title)}</strong>
+                        <div class="subtle">${escapeHtml(archive.week_start)} · 版本 ${escapeHtml(archive.source_version_id)}${time ? ` · ${escapeHtml(time)}` : ""}</div>
+                    </div>
+                    <div class="archive-actions">
+                        <button type="button" class="ghost" data-open-archive="${escapeHtml(archive.archive_id)}">${active ? "正在查看" : "開啟只讀存檔"}</button>
+                        <button type="button" class="stamp-action" data-copy-archive="${escapeHtml(archive.archive_id)}">從此存檔建立可編輯副本</button>
+                    </div>
+                </div>`;
+        }).join("");
+        renderIcons();
+    }
+
+    async function createArchive() {
+        if (!state.run || state.archiveMode) return;
+        setBusy(true);
+        try {
+            await saveWorkspace({ silent: true });
+            await apiJson("/api/demo/archives", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    run_id: state.run.run_id,
+                    title: $("archiveTitle").value.trim() || null
+                })
+            });
+            $("archiveTitle").value = "";
+            saveLocalDraft();
+            await loadArchives();
+            toast("已建立不可變固態存檔；之後修改目前工作不會改動此快照。");
+        } catch (err) {
+            toast(`建立存檔失敗：${errorMessage(err)}`);
+        } finally {
+            setBusy(false);
+            renderIcons();
+        }
+    }
+
+    async function openArchive(event) {
+        const button = event.target.closest("[data-open-archive]");
+        if (!button || button.disabled) return;
+        setBusy(true);
+        try {
+            const payload = await apiJson(`/api/demo/archives/${button.dataset.openArchive}`);
+            activateRun(payload.snapshot, { archive: payload.archive, autosave: false });
+            $("workspaceStatus").textContent = `只讀存檔：${payload.archive.title} · 原批次 ${payload.archive.run_id}`;
+            setAutosaveStatus("固態存檔只讀", "warn");
+            toast("已開啟固態存檔。審核、發佈及下載操作已鎖定。 ");
+        } catch (err) {
+            toast(`開啟存檔失敗：${errorMessage(err)}`);
+        } finally {
+            setBusy(false);
+            renderIcons();
+        }
+    }
+
+    async function createEditableArchiveCopy(event) {
+        const button = event.target.closest("[data-copy-archive]");
+        if (!button || button.disabled) return;
+        button.disabled = true;
+        setBusy(true);
+        try {
+            const run = await apiJson(`/api/demo/archives/${button.dataset.copyArchive}/editable-copy`, {
+                method: "POST"
+            });
+            activateRun(run, { autosave: false });
+            const origin = run.editable_copy || {};
+            $("workspaceStatus").textContent = `可編輯副本：${run.week_start} · 新批次 ${run.run_id} · 來源存檔 ${origin.archive_id || button.dataset.copyArchive}`;
+            setAutosaveStatus("副本已設為目前工作", "ok");
+            toast("已從固態存檔建立獨立的可編輯副本；原存檔保持不變。");
+        } catch (err) {
+            toast(`建立可編輯副本失敗：${errorMessage(err)}`);
+        } finally {
+            button.disabled = false;
+            setBusy(false);
+            renderIcons();
+        }
+    }
+
+    async function checkHealth() {
+        try {
+            state.health = await apiJson("/api/health");
+            $("apiStatus").className = "pill ok";
+            $("apiStatus").innerHTML = `<i data-lucide="server"></i>後端已連線`;
+            $("devResult").textContent = `後端正常，目前版本 ${state.health.current_version || "未提供"}`;
+        } catch (err) {
+            $("apiStatus").className = "pill bad";
+            $("apiStatus").innerHTML = `<i data-lucide="server-off"></i>後端未連線`;
+            $("devResult").textContent = `後端檢查失敗：${errorMessage(err)}`;
+        } finally {
+            renderIcons();
+        }
+    }
+
+    function readChangeDraft() {
+        const type = $("changeType").value;
+        if (!type) return null;
+        const base = {
+            type,
+            change_date: $("changeDate").value || $("weekStart").value,
+            period: $("changePeriod").value || "AM",
+            reason: $("changeReason").value.trim() || null
+        };
+        if (type === "leave") {
+            return { ...base, worker_alias: $("workerAlias").value.trim() };
+        }
+        if (type === "elder_cancellation") {
+            return { ...base, elder_alias: $("elderAlias").value.trim() };
+        }
+        return {
+            ...base,
+            elder_alias: $("elderAlias").value.trim(),
+            destination: $("destination").value.trim() || "未提供目的地",
+            subject: $("subject").value.trim() || "覆診",
+            appointment_time: null
+        };
+    }
+
+    function buildChanges() {
+        const draft = readChangeDraft();
+        return draft ? [...state.pendingChanges, draft] : [...state.pendingChanges];
+    }
+
+    function changeDescription(change) {
+        const parts = [change.change_date, label(PERIOD_LABELS, change.period)];
+        if (change.type === "leave" && change.worker_alias) {
+            parts.push(`同工：${change.worker_alias}`);
+        } else if (change.elder_alias) {
+            parts.push(`長者：${change.elder_alias}`);
+        }
+        if (change.type === "escort_new" && change.destination) {
+            parts.push(`目的地：${change.destination}`);
+        }
+        if (change.reason) parts.push(change.reason);
+        return parts.filter(Boolean).join(" · ");
+    }
+
+    function renderPendingChanges() {
+        $("pendingChangeCount").textContent = `${state.pendingChanges.length} 項已加入`;
+        const list = $("pendingChangeList");
+        list.hidden = state.pendingChanges.length === 0;
+        list.innerHTML = state.pendingChanges.map((change, index) => `
+            <div class="change-row">
+                <div>
+                    <strong>${escapeHtml(label(CHANGE_TYPE_LABELS, change.type))}</strong>
+                    <div class="subtle">${escapeHtml(changeDescription(change))}</div>
+                </div>
+                <button type="button" class="ghost" data-remove-change="${index}" aria-label="移除第 ${index + 1} 項變更">
+                    <i data-lucide="trash-2"></i>移除
+                </button>
+            </div>
+        `).join("");
+        renderIcons();
+    }
+
+    function clearChangeDraft() {
+        $("changeType").value = "";
+        $("workerAlias").value = "";
+        $("elderAlias").value = "";
+        $("destination").value = "";
+        $("subject").value = "";
+        $("changeReason").value = "";
+    }
+
+    function addPendingChange() {
+        const draft = readChangeDraft();
+        if (!draft) {
+            toast("請先選擇臨時變更類型。");
+            return;
+        }
+        state.pendingChanges.push(draft);
+        clearChangeDraft();
+        renderPendingChanges();
+        scheduleWorkspaceAutosave();
+        toast(`已加入第 ${state.pendingChanges.length} 項變更。`);
+    }
+
+    function removePendingChange(event) {
+        const button = event.target.closest("[data-remove-change]");
+        if (!button) return;
+        const index = Number(button.dataset.removeChange);
+        if (!Number.isInteger(index) || index < 0 || index >= state.pendingChanges.length) return;
+        state.pendingChanges.splice(index, 1);
+        renderPendingChanges();
+        scheduleWorkspaceAutosave();
+    }
+
+    async function generateRoster(event) {
+        event.preventDefault();
+        const hc = $("hcWorkbook").files[0];
+        const escort = $("escortWorkbook").files[0];
+        if (!hc || !escort) {
+            toast("請先上載 HC 時間表和護送總表。");
+            return;
+        }
+        const formData = new FormData();
+        const changes = buildChanges();
+        formData.append("hc_workbook", hc);
+        formData.append("escort_workbook", escort);
+        formData.append("week_start", $("weekStart").value);
+        formData.append("changes_json", JSON.stringify(changes));
+
+        setBusy(true);
+        $("runStatus").className = "pill warn";
+        $("runStatus").innerHTML = `<i data-lucide="loader"></i>生成中`;
+        renderIcons();
+        try {
+            const run = await apiJson("/api/demo/weekly-roster", {
+                method: "POST",
+                body: formData
+            });
+            activateRun(run);
+            toast(run.review_export_allowed
+                ? "排班草稿已生成，可下載審核草稿。"
+                : "排班草稿已生成，但未通過匯出前檢查。");
+        } catch (err) {
+            $("runStatus").className = "pill bad";
+            $("runStatus").innerHTML = `<i data-lucide="circle-alert"></i>生成失敗`;
+            toast(`生成失敗：${errorMessage(err)}`);
+        } finally {
+            setBusy(false);
+            renderIcons();
+        }
+    }
+
+    function renderRun(run) {
+        const parse = run.parse_summary || {};
+        const fixed = run.fixed_base || {};
+        const reconciliation = run.reconciliation || {};
+        const exportReport = run.export_report || {};
+        const publicationState = reconciliation.publication_state || "blocked";
+        const publicationLabel = exportReport.publication_label || run.publication_label || "草稿";
+        const stateClass = state.archiveMode ? "warn" : publicationState === "ready"
+            ? "ok"
+            : run.review_export_allowed ? "warn" : "bad";
+        const displayLabel = state.archiveMode ? "固態存檔" : publicationLabel;
+        $("runStatus").className = `pill ${stateClass}`;
+        $("runStatus").innerHTML = `<i data-lucide="${state.archiveMode ? "archive" : "check-circle-2"}"></i>${escapeHtml(displayLabel)}`;
+        $("resultBadge").className = `pill ${stateClass}`;
+        $("resultBadge").textContent = displayLabel;
+        $("resultMeta").textContent = `目標週 ${run.week_start} · 批次 ${run.run_id} · ${displayLabel}`;
+        $("metricWorkers").textContent = fixed.worker_columns ?? "--";
+        $("metricHC").textContent = parse.hc_selected_for_week ?? "--";
+        $("metricEscort").textContent = parse.escort_selected_for_week ?? "--";
+        $("metricEntries").textContent = reconciliation.placement_count ?? "--";
+        $("metricUnassigned").textContent = reconciliation.unassigned ?? "--";
+        $("metricAudit").textContent = reconciliation.pending_audit_counts?.total ?? "--";
+        $("gapCount").textContent = `${reconciliation.pending_audit_counts?.["blocking:true"] ?? 0} 項阻塞`;
+        const warnings = parse.warnings || [];
+        const exportReasons = run.export_block_reasons || [];
+        const warningText = [...exportReasons, ...warnings].length
+            ? [...exportReasons, ...warnings].join("；")
+            : "已按目標週讀取上載檔案；此檔案仍是並行審核草稿，未經主管確認不可發放。";
+        $("warningBox").textContent = state.archiveMode
+            ? `目前正在查看只讀固態存檔；所有操作已鎖定。${warningText}`
+            : warningText;
+        state.finalExportUrl = state.archiveMode ? null : run.final_export_url || null;
+        const serverReady = !state.archiveMode && publicationState === "ready";
+        $("publishBtn").disabled = !serverReady;
+        $("finalDownloadBtn").disabled = !serverReady || !state.finalExportUrl;
+        $("publicationNote").textContent = state.archiveMode
+            ? "固態存檔是只讀快照；請按「回到目前工作」後再審核、發佈或下載。"
+            : serverReady
+            ? (state.finalExportUrl
+                ? "此服務器版本已發佈；可重新下載同一份不可變正式版。"
+                : "服務器重新驗證為可發放；請填寫發佈人後建立正式版。")
+            : `目前狀態「${publicationLabel}」不可發佈正式版；請按服務器列出的原因完成審核。`;
+        renderImpacts(run.change_summary || [], run.impact_reports || []);
+        renderAudit(run.audit_items || []);
+        $("revalidateBtn").disabled = state.archiveMode;
+        $("quickReviewer").disabled = state.archiveMode;
+        $("quickReason").disabled = state.archiveMode;
+        $("applyReviewerBtn").disabled = state.archiveMode;
+        $("applyReasonBtn").disabled = state.archiveMode;
+        $("bulkHardBypassBtn").disabled = state.isBusy || state.archiveMode
+            || visiblePendingAuditCards().length === 0;
+        renderIcons();
+    }
+
+    function renderImpacts(changeSummary, reports) {
+        $("impactCount").textContent = `${changeSummary.length} 項變更`;
+        if (!changeSummary.length && !reports.length) {
+            $("impactList").innerHTML = `<div class="empty">本次未加入臨時變更。</div>`;
+            return;
+        }
+        const summaryHtml = changeSummary.map((text) => `
+            <div class="item impact">
+                <div class="subtle">${escapeHtml(text)}</div>
+            </div>
+        `);
+        const reportHtml = reports.map((report) => `
+            <div class="item impact">
+                <div class="item-row">
+                    <strong>${escapeHtml(report.summary || "變更影響")}</strong>
+                    <span class="pill ${report.requires_review ? "warn" : "ok"}">${report.requires_review ? "需審核" : "已處理"}</span>
+                </div>
+                <div class="subtle">影響 ${(report.impacts || []).length} 項 · 風險：${escapeHtml(label(RISK_LABELS, report.risk_level))}</div>
+            </div>
+        `);
+        $("impactList").innerHTML = [...summaryHtml, ...reportHtml].join("");
+    }
+
+    function renderAudit(items) {
+        renderAuditFilters(items);
+        if (!items.length) {
+            $("auditList").innerHTML = `<div class="empty">沒有審核項目。</div>`;
+            return;
+        }
+        // Every live pending audit remains actionable in this one review flow;
+        // immutable archives deliberately render the same cards read-only.
+        const shown = items;
+        $("auditList").innerHTML = shown.map((item) => {
+            const pending = item.status === "pending";
+            const actionable = pending && !state.archiveMode;
+            const target = reviewTargetEntry(item);
+            const context = auditContext(item);
+            const approvable = Boolean(item.suggested_entry || (item.chain || []).length);
+            const statusLabel = pending ? (item.blocking ? "阻塞" : "待審核") : {
+                approved: "已批准",
+                rejected: "已強制略過",
+                edited: "已修改"
+            }[item.status] || item.status;
+            return `
+            <div class="item audit-card audit-kind-${escapeHtml(item.kind)} ${pending ? "" : "decided"}" data-audit-id="${escapeHtml(item.id)}" data-audit-kind="${escapeHtml(item.kind)}">
+                <div class="item-row">
+                    <strong class="audit-kind-label">${escapeHtml(label(AUDIT_LABELS, item.kind))}</strong>
+                    <span class="pill ${pending ? (item.blocking ? "bad" : "warn") : "ok"}">${escapeHtml(statusLabel)}</span>
+                </div>
+                <div class="audit-id">審核編號：${escapeHtml(item.id || "未提供")}</div>
+                <div class="audit-context">
+                    <div class="audit-detail">
+                        <span class="audit-detail-label">任務</span>
+                        <span>${escapeHtml(context.tasks)}</span>
+                    </div>
+                    <div class="audit-detail">
+                        <span class="audit-detail-label">涉及同工</span>
+                        <span>${escapeHtml(context.workers)}</span>
+                    </div>
+                    <div class="audit-detail">
+                        <span class="audit-detail-label">涉及長者</span>
+                        <span>${escapeHtml(context.elders)}</span>
+                    </div>
+                    <div class="audit-detail">
+                        <span class="audit-detail-label">日期／時段</span>
+                        <span>${escapeHtml(context.times)}</span>
+                    </div>
+                    <div class="audit-detail">
+                        <span class="audit-detail-label">問題摘要</span>
+                        <span>${escapeHtml(item.reason || "未提供")}</span>
+                    </div>
+                    <div class="audit-detail">
+                        <span class="audit-detail-label">無法完成原因</span>
+                        <span>${escapeHtml(context.reasons)}</span>
+                    </div>
+                </div>
+                ${actionable ? `
+                <div class="review-controls">
+                    <div class="review-fields">
+                        <input type="text" data-review-field="actor" aria-label="審核人" placeholder="審核人（必填）">
+                        <input type="text" data-review-field="note" aria-label="審核備註" placeholder="備註（修改／強制略過必填）">
+                    </div>
+                    <div class="review-edit-fields" hidden>
+                        <input type="text" data-edit-field="worker_id" aria-label="修改同工編號" placeholder="同工編號" value="${escapeHtml(target?.worker_id || "")}">
+                        <input type="date" data-edit-field="schedule_date" aria-label="修改日期" value="${escapeHtml(target?.schedule_date || state.run?.week_start || "")}">
+                        <select data-edit-field="period" aria-label="修改時段">
+                            <option value="AM" ${target?.period === "AM" ? "selected" : ""}>上午</option>
+                            <option value="PM" ${target?.period === "PM" ? "selected" : ""}>下午</option>
+                        </select>
+                        <select data-edit-field="session_index" aria-label="修改節次">
+                            <option value="1" ${target?.session_index === 1 ? "selected" : ""}>第一節</option>
+                            <option value="2" ${target?.session_index === 2 ? "selected" : ""}>第二節</option>
+                            <option value="" ${target?.session_index == null ? "selected" : ""}>全時段</option>
+                        </select>
+                        <input type="text" data-edit-field="override_note" aria-label="硬規則覆核說明" placeholder="如違反硬規則，必須填覆核說明">
+                        <button type="button" class="stamp-action" data-review-action="edit" ${target ? "" : "disabled"}>儲存修改</button>
+                    </div>
+                    <div class="actions">
+                        <button type="button" data-review-action="approve" ${approvable ? "" : "disabled data-locked"} title="${approvable ? "批准明確建議" : "此項沒有可批准建議，請補資料或修改"}">批准</button>
+                        <button type="button" class="ghost" data-review-action="edit-toggle" ${target ? "" : "disabled data-locked"}>修改</button>
+                        <button type="button" class="ghost" data-review-action="reject" title="主管接受風險；保留目前安排，或停止該任務於本週執行">強制略過（Hard-bypass）</button>
+                    </div>
+                </div>` : ""}
+            </div>
+        `;
+        }).join("");
+        applyAuditFilter();
+    }
+
+    function auditContext(item) {
+        const entries = auditRelatedEntries(item);
+        const original = item.original_entry || null;
+        const suggested = item.suggested_entry || null;
+        const workerHints = auditWorkerHints(item.reason || "");
+        const taskLabels = uniqueText(entries.map((entry) => {
+            const service = label(SERVICE_LABELS, entry.service_code) || "未提供服務";
+            const target = entry.elder_name || entry.center || entry.route || entry.destination;
+            return target ? `${service} · ${target}` : service;
+        }));
+
+        const workerParts = [];
+        const originalWorker = original?.worker_name || original?.worker_id || workerHints.original;
+        const suggestedWorker = suggested?.worker_name || suggested?.worker_id || workerHints.suggested;
+        if (originalWorker) {
+            workerParts.push(`原同工：${originalWorker}`);
+        }
+        if (suggestedWorker) {
+            if (suggestedWorker !== originalWorker) workerParts.push(`建議同工：${suggestedWorker}`);
+        }
+        const namedWorkers = uniqueText(entries.map((entry) => entry.worker_name || entry.worker_id));
+        const alreadyNamed = new Set([
+            originalWorker,
+            suggestedWorker
+        ].filter(Boolean));
+        const otherWorkers = namedWorkers.filter((worker) => !alreadyNamed.has(worker));
+        if (otherWorkers.length) workerParts.push(`其他涉及同工：${otherWorkers.join("、")}`);
+
+        const elders = uniqueText(entries.map((entry) => entry.elder_name || entry.elder_id));
+        const hasNonElderTarget = entries.some((entry) => entry.center || entry.route || entry.destination);
+        const times = uniqueText(entries.map(auditTimeLabel));
+        const detailedReasons = uniqueText([
+            ...(item.reasons || []).map((reason) => reason.message),
+            ...entries.flatMap((entry) => (entry.review_reasons || []).map((reason) => reason.message)),
+            ...entries.map((entry) => entry.explanation)
+        ]);
+
+        return {
+            tasks: taskLabels.join("；") || "未能對應具體任務",
+            workers: workerParts.join("；") || "未提供同工資料",
+            elders: elders.join("、") || (hasNonElderTarget ? "不適用（中心／路線任務）" : "未提供長者資料"),
+            times: times.join("；") || "未提供日期或時段",
+            reasons: detailedReasons.join("；") || item.reason || "未提供具體原因"
+        };
+    }
+
+    function auditWorkerHints(reason) {
+        const templateWorker = reason.match(/模板同工\s+([^；，\s]+)/)?.[1];
+        const unavailableWorker = reason.match(/因\s+([^；，\s]+)\s+不可用/)?.[1];
+        const leaveWorker = reason.match(/^([^；，\s]+)\s+請假/)?.[1];
+        const suggestedWorker = reason.match(/建議\s+([^；，\s]+)\s+接手/)?.[1]
+            || reason.match(/建議由\s+([^；，\s]+)\s+代更/)?.[1];
+        return {
+            original: templateWorker || unavailableWorker || leaveWorker || "",
+            suggested: suggestedWorker || ""
+        };
+    }
+
+    function auditRelatedEntries(item) {
+        const chainEntries = (item.chain || []).flatMap((step) => [
+            step.entry_before,
+            step.entry_after
+        ]);
+        const currentEntries = state.run?.version?.entries || [];
+        const entryIds = new Set(item.entry_ids || []);
+        const demandIds = new Set(item.demand_ids || []);
+        const linkedEntries = currentEntries.filter((entry) => (
+            entryIds.has(entry.id) || (entry.demand_id && demandIds.has(entry.demand_id))
+        ));
+        const candidates = [
+            item.original_entry,
+            item.suggested_entry,
+            ...chainEntries,
+            ...linkedEntries
+        ].filter(Boolean);
+        const seen = new Set();
+        return candidates.filter((entry) => {
+            const key = entry.id || [
+                entry.demand_id,
+                entry.schedule_date,
+                entry.period,
+                entry.worker_id
+            ].join(":");
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+    }
+
+    function auditTimeLabel(entry) {
+        if (!entry?.schedule_date && !entry?.period) return "";
+        const parts = [entry.schedule_date, label(PERIOD_LABELS, entry.period)];
+        if (entry.session_index === 1) parts.push("第一節");
+        else if (entry.session_index === 2) parts.push("第二節");
+        else if (entry.session_index == null) parts.push("全時段");
+        const start = formatClock(entry.start_time);
+        const end = formatClock(entry.end_time);
+        if (start || end) parts.push(`${start || "?"}–${end || "?"}`);
+        return parts.filter(Boolean).join(" · ");
+    }
+
+    function formatClock(value) {
+        return value ? String(value).slice(0, 5) : "";
+    }
+
+    function uniqueText(values) {
+        return [...new Set(values.filter((value) => String(value || "").trim()))];
+    }
+
+    function renderAuditFilters(items) {
+        $("auditTools").hidden = items.length === 0;
+        if (!items.length) {
+            $("auditFilters").innerHTML = "";
+            state.auditFilter = "all";
+            return;
+        }
+        const counts = items.reduce((acc, item) => {
+            acc[item.kind] = (acc[item.kind] || 0) + 1;
+            return acc;
+        }, {});
+        if (state.auditFilter !== "all" && !counts[state.auditFilter]) {
+            state.auditFilter = "all";
+        }
+        const filters = [
+            { kind: "all", label: "全部", count: items.length },
+            ...AUDIT_KINDS.filter((kind) => counts[kind]).map((kind) => ({
+                kind,
+                label: AUDIT_LABELS[kind],
+                count: counts[kind]
+            }))
+        ];
+        $("auditFilters").innerHTML = filters.map((filter) => `
+            <button type="button" class="audit-filter ${filter.kind === "all" ? "" : `audit-kind-${escapeHtml(filter.kind)}`}" data-audit-filter="${escapeHtml(filter.kind)}" aria-pressed="${filter.kind === state.auditFilter}">
+                ${escapeHtml(filter.label)} ${filter.count}
+            </button>
+        `).join("");
+    }
+
+    function applyAuditFilter() {
+        document.querySelectorAll("#auditList [data-audit-kind]").forEach((card) => {
+            card.hidden = state.auditFilter !== "all" && card.dataset.auditKind !== state.auditFilter;
+        });
+        document.querySelectorAll("#auditFilters [data-audit-filter]").forEach((button) => {
+            const active = button.dataset.auditFilter === state.auditFilter;
+            button.classList.toggle("active", active);
+            button.setAttribute("aria-pressed", String(active));
+        });
+        const visiblePending = visiblePendingAuditCards().length;
+        $("bulkHardBypassBtn").disabled = state.isBusy
+            || state.archiveMode || visiblePending === 0;
+        $("auditToolHint").textContent = `目前顯示 ${visiblePending} 項待審核；一鍵強制忽略會使用快捷簽名及原因立即提交目前分類。`;
+    }
+
+    function handleAuditFilter(event) {
+        const button = event.target.closest("[data-audit-filter]");
+        if (!button) return;
+        state.auditFilter = button.dataset.auditFilter;
+        applyAuditFilter();
+        saveLocalDraft();
+    }
+
+    function visiblePendingAuditCards() {
+        return [...document.querySelectorAll("#auditList [data-audit-id]")].filter((card) => (
+            !card.hidden && card.querySelector(".review-controls")
+        ));
+    }
+
+    function applyQuickReviewField(field, value, emptyMessage, successLabel) {
+        const cleanValue = value.trim();
+        if (!cleanValue) {
+            toast(emptyMessage);
+            return;
+        }
+        const cards = visiblePendingAuditCards();
+        cards.forEach((card) => {
+            card.querySelector(`[data-review-field="${field}"]`).value = cleanValue;
+        });
+        toast(cards.length
+            ? `${successLabel}已套用至 ${cards.length} 項待審核項目。`
+            : "目前分類沒有可填寫的待審核項目。");
+    }
+
+    function applyQuickReviewer() {
+        applyQuickReviewField(
+            "actor",
+            $("quickReviewer").value,
+            "請先填寫快捷簽名。",
+            "簽名"
+        );
+    }
+
+    function applyQuickReason() {
+        applyQuickReviewField(
+            "note",
+            $("quickReason").value,
+            "請先選擇常用原因。",
+            "原因"
+        );
+    }
+
+    async function bulkHardBypassVisible() {
+        if (!state.run || state.archiveMode) return;
+        if (state.isBusy) {
+            toast("正在處理上一個審核操作，請稍候。");
+            return;
+        }
+        const cards = visiblePendingAuditCards();
+        if (!cards.length) {
+            toast("目前分類沒有可強制忽略的待審核項目。");
+            return;
+        }
+        const actor = $("quickReviewer").value.trim();
+        const note = $("quickReason").value.trim();
+        if (!actor) {
+            toast("請先填寫快捷簽名。");
+            $("quickReviewer").focus();
+            return;
+        }
+        if (!note) {
+            toast("請先選擇快捷原因，批量強制忽略必須保留原因。");
+            $("quickReason").focus();
+            return;
+        }
+        const selectedIds = cards.map((card) => card.dataset.auditId);
+        const requiredIds = [...new Set(
+            selectedIds.flatMap((auditId) => atomicAuditIds(auditId))
+        )].sort();
+        const categoryLabel = state.auditFilter === "all"
+            ? "全部分類"
+            : label(AUDIT_LABELS, state.auditFilter);
+        const request = {
+            source_version_id: state.run.version.id,
+            content_hash: state.run.reconciliation.content_hash,
+            actor,
+            action: "reject",
+            audit_id: selectedIds[0],
+            audit_ids: requiredIds,
+            note
+        };
+        request.idempotency_key = reviewIdempotencyKey({
+            kind: "bulk-hard-bypass",
+            run_id: state.run.run_id,
+            ...request
+        });
+        setBusy(true);
+        const restoreButton = beginButtonProcessing($("bulkHardBypassBtn"));
+        try {
+            const updated = await apiJson(`/api/demo/weekly-roster/${state.run.run_id}/review-decisions`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(request)
+            });
+            state.pendingReview = null;
+            const decisionId = updated.decision?.decision_id;
+            const decidedCount = (updated.audit_items || []).filter(
+                (item) => item.decision_id === decisionId
+            ).length;
+            activateRun(updated);
+            toast(`已強制忽略「${categoryLabel}」${decidedCount || selectedIds.length} 項問題；操作人及原因已記錄。`);
+        } catch (err) {
+            if (isStaleReviewError(err)) {
+                await reloadCurrentRun(`一鍵強制忽略未完成（${errorMessage(err)}）`);
+            } else {
+                toast(`一鍵強制忽略失敗：${errorMessage(err)}`);
+            }
+        } finally {
+            restoreButton();
+            setBusy(false);
+            renderIcons();
+        }
+    }
+
+    function reviewTargetEntry(item) {
+        if (item.suggested_entry) return item.suggested_entry;
+        const chain = item.chain || [];
+        if (chain.length && chain[chain.length - 1].entry_after) {
+            return chain[chain.length - 1].entry_after;
+        }
+        const entries = state.run?.version?.entries || [];
+        return entries.find((entry) => (item.entry_ids || []).includes(entry.id)) || null;
+    }
+
+    function atomicAuditIds(seedId) {
+        const items = state.run?.audit_items || [];
+        const byId = new Map(items.map((item) => [item.id, item]));
+        const group = new Set([seedId]);
+        let changed = true;
+        while (changed) {
+            changed = false;
+            for (const item of items) {
+                const dependencies = item.depends_on || [];
+                if (group.has(item.id)) {
+                    for (const id of dependencies) {
+                        if (byId.has(id) && !group.has(id)) {
+                            group.add(id);
+                            changed = true;
+                        }
+                    }
+                } else if (dependencies.some((id) => group.has(id))) {
+                    group.add(item.id);
+                    changed = true;
+                }
+            }
+        }
+        return [...group].sort();
+    }
+
+    function newIdempotencyKey() {
+        if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+        return `review-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    async function handleAuditAction(event) {
+        const button = event.target.closest("[data-review-action]");
+        if (!button || button.disabled) return;
+        if (state.archiveMode) return;
+        if (state.isBusy) {
+            // Explicit state guard: even if a stale DOM node is clickable,
+            // a second submission is ignored while one is in flight.
+            toast("正在處理上一個審核操作，請稍候。");
+            return;
+        }
+        const card = button.closest("[data-audit-id]");
+        if (!card || !state.run) return;
+        const action = button.dataset.reviewAction;
+        const editFields = card.querySelector(".review-edit-fields");
+        if (action === "edit-toggle") {
+            editFields.hidden = !editFields.hidden;
+            return;
+        }
+        const auditId = card.dataset.auditId;
+        const actor = card.querySelector('[data-review-field="actor"]').value.trim();
+        const note = card.querySelector('[data-review-field="note"]').value.trim();
+        if (!actor) {
+            toast("請填寫審核人。");
+            return;
+        }
+        if ((action === "edit" || action === "reject") && !note) {
+            toast("修改或強制略過必須填寫備註。");
+            return;
+        }
+        const request = {
+            source_version_id: state.run.version.id,
+            content_hash: state.run.reconciliation.content_hash,
+            actor,
+            action,
+            audit_id: auditId,
+            audit_ids: atomicAuditIds(auditId),
+            note: note || null
+        };
+        if (action === "edit") {
+            const item = (state.run.audit_items || []).find((row) => row.id === auditId);
+            const target = reviewTargetEntry(item || {});
+            const workerId = card.querySelector('[data-edit-field="worker_id"]').value.trim();
+            if (!target || !workerId) {
+                toast("修改必須指定審核項目內的同工編號。");
+                return;
+            }
+            const session = card.querySelector('[data-edit-field="session_index"]').value;
+            request.edited_entry = {
+                entry_id: target.id,
+                worker_id: workerId,
+                schedule_date: card.querySelector('[data-edit-field="schedule_date"]').value,
+                period: card.querySelector('[data-edit-field="period"]').value,
+                session_index: session ? Number(session) : null
+            };
+            request.override_note = card.querySelector('[data-edit-field="override_note"]').value.trim() || null;
+        }
+        request.idempotency_key = reviewIdempotencyKey({
+            kind: "single-review",
+            run_id: state.run.run_id,
+            ...request
+        });
+        setBusy(true);
+        const restoreButton = beginButtonProcessing(button);
+        try {
+            const updated = await apiJson(`/api/demo/weekly-roster/${state.run.run_id}/review-decisions`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(request)
+            });
+            state.pendingReview = null;
+            activateRun(updated);
+            toast(action === "approve" ? "審核項目已批准。" : action === "reject" ? "已記錄主管強制略過；目前安排或本週停止狀態已保留。" : "修改已儲存並重新驗證。");
+        } catch (err) {
+            if (isStaleReviewError(err)) {
+                await reloadCurrentRun(`審核操作未完成（${errorMessage(err)}）`);
+            } else {
+                toast(`審核操作失敗：${errorMessage(err)}`);
+            }
+        } finally {
+            restoreButton();
+            setBusy(false);
+            renderIcons();
+        }
+    }
+
+    async function revalidateRoster() {
+        if (!state.run || state.archiveMode || state.isBusy) return;
+        setBusy(true);
+        const restoreButton = beginButtonProcessing($("revalidateBtn"));
+        try {
+            const updated = await apiJson(`/api/demo/weekly-roster/${state.run.run_id}/revalidate`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    source_version_id: state.run.version.id,
+                    content_hash: state.run.reconciliation.content_hash
+                })
+            });
+            activateRun(updated);
+            toast("已按服務器保存版本重新驗證；穩定編號及總數保持不變。");
+        } catch (err) {
+            if (isStaleReviewError(err)) {
+                await reloadCurrentRun(`重新驗證未完成（${errorMessage(err)}）`);
+            } else {
+                toast(`重新驗證失敗：${errorMessage(err)}`);
+            }
+        } finally {
+            restoreButton();
+            setBusy(false);
+            renderIcons();
+        }
+    }
+
+    async function downloadRoster() {
+        if (!state.reviewExportUrl) {
+            toast("請先生成排班表。");
+            return;
+        }
+        setBusy(true);
+        try {
+            const res = await fetch(`${API_BASE}${state.reviewExportUrl}`);
+            if (!res.ok) {
+                const text = await res.text();
+                let message = text || res.statusText;
+                try {
+                    const parsed = JSON.parse(text);
+                    message = parsed.detail?.message || message;
+                } catch (_) {}
+                throw new Error(localizeErrorText(message));
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "照顧員工作分工表_審核草稿.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            toast("審核草稿已下載。未處理阻塞項目前不可發放。");
+        } catch (err) {
+            toast(`下載失敗：${errorMessage(err)}`);
+        } finally {
+            setBusy(false);
+            renderIcons();
+        }
+    }
+
+    async function publishRoster() {
+        if (state.archiveMode || !state.run || state.run.reconciliation?.publication_state !== "ready") {
+            toast("服務器尚未把此版本標記為可發放，不能發佈正式版。");
+            return;
+        }
+        const actor = $("publisherActor").value.trim();
+        if (!actor) {
+            toast("請填寫正式版發佈人。");
+            return;
+        }
+        if (state.isBusy) return;
+        setBusy(true);
+        const restoreButton = beginButtonProcessing($("publishBtn"));
+        try {
+            const updated = await apiJson(`/api/demo/weekly-roster/${state.run.run_id}/publish`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    actor,
+                    source_version_id: state.run.version.id,
+                    content_hash: state.run.reconciliation.content_hash
+                })
+            });
+            activateRun(updated);
+            toast(updated.idempotent_replay
+                ? "此版本已發佈，已載入原有正式版。"
+                : "正式版已安全發佈並記錄。可下載交予同工使用。");
+        } catch (err) {
+            if (isStaleReviewError(err)) {
+                await reloadCurrentRun(`發佈未完成（${errorMessage(err)}）`);
+            } else {
+                toast(`發佈失敗：${errorMessage(err)}`);
+            }
+        } finally {
+            restoreButton();
+            setBusy(false);
+            renderIcons();
+        }
+    }
+
+    async function downloadFinalRoster() {
+        if (!state.finalExportUrl || state.run?.reconciliation?.publication_state !== "ready") {
+            toast("此服務器版本尚沒有可下載的正式版。");
+            return;
+        }
+        setBusy(true);
+        try {
+            const res = await fetch(`${API_BASE}${state.finalExportUrl}`);
+            if (!res.ok) {
+                const text = await res.text();
+                let message = text || res.statusText;
+                try {
+                    const parsed = JSON.parse(text);
+                    message = parsed.detail?.message || message;
+                } catch (_) {}
+                throw new Error(localizeErrorText(message));
+            }
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "照顧員工作分工表_正式版.xlsx";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(url);
+            toast("正式版已下載。");
+        } catch (err) {
+            toast(`正式版下載失敗：${errorMessage(err)}`);
+        } finally {
+            setBusy(false);
+            renderIcons();
+        }
+    }
+
+    function fillSampleWeek() {
+        state.pendingChanges = [];
+        renderPendingChanges();
+        $("weekStart").value = "2026-01-05";
+        $("changeDate").value = "2026-01-05";
+        $("changeType").value = "escort_new";
+        $("elderAlias").value = "Y珍";
+        $("destination").value = "東區醫院";
+        $("subject").value = "覆診";
+        $("changeReason").value = "臨時新增護送";
+        scheduleWorkspaceAutosave();
+        toast("已填入 2026 年 1 月護送樣本週。");
+    }
+
+    async function checkSampleImport() {
+        try {
+            const batch = await apiJson("/api/import/workbooks?use_default_docs=true", { method: "POST" });
+            $("devResult").textContent = `內置樣本已檢查：解析 ${batch.summary?.parsed_count ?? 0} 項，漏讀 ${batch.summary?.silently_dropped_cells ?? 0}。`;
+        } catch (err) {
+            $("devResult").textContent = `樣本檢查失敗：${errorMessage(err)}`;
+        }
+    }
+
+    function snapWeekStartToMonday() {
+        const value = $("weekStart").value;
+        if (!value) return;
+        const picked = new Date(`${value}T00:00:00`);
+        if (Number.isNaN(picked.getTime())) return;
+        const offset = (picked.getDay() + 6) % 7;
+        if (!offset) return;
+        picked.setDate(picked.getDate() - offset);
+        const pad = (n) => String(n).padStart(2, "0");
+        const monday = `${picked.getFullYear()}-${pad(picked.getMonth() + 1)}-${pad(picked.getDate())}`;
+        $("weekStart").value = monday;
+        saveLocalDraft();
+        toast(`目標週已自動對齊至星期一 ${monday}。`);
+    }
+
+    $("demoForm").addEventListener("submit", generateRoster);
+    $("addChangeBtn").addEventListener("click", addPendingChange);
+    $("pendingChangeList").addEventListener("click", removePendingChange);
+    $("downloadBtn").addEventListener("click", downloadRoster);
+    $("publishBtn").addEventListener("click", publishRoster);
+    $("finalDownloadBtn").addEventListener("click", downloadFinalRoster);
+    $("fillSampleBtn").addEventListener("click", fillSampleWeek);
+    $("healthBtn").addEventListener("click", checkHealth);
+    $("sampleImportBtn").addEventListener("click", checkSampleImport);
+    $("auditList").addEventListener("click", handleAuditAction);
+    $("auditFilters").addEventListener("click", handleAuditFilter);
+    $("applyReviewerBtn").addEventListener("click", applyQuickReviewer);
+    $("applyReasonBtn").addEventListener("click", applyQuickReason);
+    $("bulkHardBypassBtn").addEventListener("click", bulkHardBypassVisible);
+    $("revalidateBtn").addEventListener("click", revalidateRoster);
+    $("saveWorkspaceBtn").addEventListener("click", () => saveWorkspace());
+    $("archiveRunBtn").addEventListener("click", createArchive);
+    $("resumeWorkspaceBtn").addEventListener("click", () => restoreWorkspace({ notify: true }));
+    $("archiveList").addEventListener("click", openArchive);
+    $("archiveList").addEventListener("click", createEditableArchiveCopy);
+    $("weekStart").addEventListener("change", snapWeekStartToMonday);
+    $("demoForm").addEventListener("input", saveLocalDraft);
+    $("quickReviewer").addEventListener("input", saveLocalDraft);
+    $("quickReason").addEventListener("change", saveLocalDraft);
+    $("archiveTitle").addEventListener("input", saveLocalDraft);
+
+    async function initializeApp() {
+        restoreLocalDraft();
+        setBusy(false);
+        await checkHealth();
+        await Promise.all([restoreWorkspace(), loadArchives()]);
+        renderIcons();
+    }
+
+    initializeApp();
+</script>
+</body>
+</html>

@@ -1,0 +1,162 @@
+{
+  "$schema": "https://rostercopiilot.local/schema/benchmark/v0.1",
+  "suite": "RosterCopiilot benchmark v0.1",
+  "dataset": "mock/canonical.json",
+  "seed": 2026,
+  "week_start": "2026-06-08",
+  "notes": "Ranges are inclusive. Exact assertions are marked exact=true. All cases additionally assert hard_constraint_violations == 0 and determinism (same seed => identical version hash).",
+  "cases": [
+    {
+      "id": "B0",
+      "name": "Weekly baseline solve",
+      "mode": "BASELINE",
+      "events": [],
+      "assertions": {
+        "hard_constraint_violations": { "value": 0, "exact": true },
+        "coverage_rate": { "min": 0.98 },
+        "unassigned_count.duty": { "value": 0, "exact": true },
+        "unassigned_count.escort": { "value": 0, "exact": true },
+        "center_duty_coverage.min_ratio": { "value": 1.0, "exact": true },
+        "escort_fulfillment_rate": { "value": 1.0, "exact": true },
+        "workload_balance_score": { "min": 0.75 },
+        "manual_review_count.blocking": { "max": 4 },
+        "audit_kinds_present": ["source_ambiguity", "data_gap_skill"],
+        "exclusive_service_cancel_count": { "value": 0, "exact": true },
+        "solve_time_ms": { "max": 30000 }
+      }
+    },
+    {
+      "id": "B1",
+      "name": "EV1 full-day leave of escort-heavy worker (Tue)",
+      "mode": "REPAIR",
+      "events": ["mock/events/ev1_leave_full_day.json"],
+      "assertions": {
+        "escort_fulfillment_rate": { "value": 1.0, "exact": true },
+        "center_duty_coverage.slots_below_required": { "value": 0, "exact": true },
+        "change_distance_from_original": { "max": 12 },
+        "manual_review_count.blocking": { "max": 2 },
+        "audit_kinds_present": ["replacement_suggestion", "escort_adjustment"],
+        "exclusive_service_cancel_count": { "value": 0, "exact": true }
+      }
+    },
+    {
+      "id": "B2",
+      "name": "EV2 half-day leave of exclusive E+RO worker",
+      "mode": "REPAIR",
+      "events": ["mock/events/ev2_leave_half_day_exclusive.json"],
+      "assertions": {
+        "exclusive_service_cancel_count": { "value": 3, "exact": true },
+        "substitutions_on_exclusive_tasks": { "value": 0, "exact": true },
+        "audit_kinds_present": ["exclusive_cancellation"],
+        "blocking_items_all_kind": "exclusive_cancellation",
+        "change_distance_from_original": { "max": 6 }
+      }
+    },
+    {
+      "id": "B3",
+      "name": "EV3 fifth escort on a 4-slot morning (Wed AM)",
+      "mode": "REPAIR",
+      "events": ["mock/events/ev3_escort_over_quota.json"],
+      "assertions": {
+        "escort_fulfillment_rate": { "value": 1.0, "exact": true },
+        "audit_kinds_present": ["displacement_chain"],
+        "displacement_chain.max_depth": { "max": 2 },
+        "displacement_chain.atomic": true,
+        "center_duty_coverage.min_ratio": { "value": 1.0, "exact": true },
+        "change_distance_from_original": { "max": 8 }
+      }
+    },
+    {
+      "id": "B4",
+      "name": "EV4 elder hospitalised (open-ended, recurring + escort)",
+      "mode": "REPAIR",
+      "events": ["mock/events/ev4_hospitalised.json"],
+      "assertions": {
+        "suspended_fixed_services": { "value": 2, "exact": true },
+        "auto_cancelled_escorts": { "value": 1, "exact": true },
+        "audit_kinds_present": ["service_cancellation", "refill"],
+        "refill_first_target": "duty_gap",
+        "reactivation_proposal_on_close": true
+      }
+    },
+    {
+      "id": "B5",
+      "name": "EV5 escort under quota + GC duty gap same day",
+      "mode": "REPAIR",
+      "events": ["mock/events/ev5_under_quota_duty_gap.json"],
+      "assertions": {
+        "center_duty_coverage.slots_below_required": { "value": 0, "exact": true },
+        "released_escort_slots_refilled_into_duty": { "min": 1 },
+        "audit_kinds_present": ["escort_adjustment", "refill"],
+        "idle_workers_after_repair": { "max": 1 }
+      }
+    },
+    {
+      "id": "B6",
+      "name": "EV6 simultaneous batch (2 leaves + 1 cancellation + 1 extra escort)",
+      "mode": "REPAIR_BATCH",
+      "events": ["mock/events/ev6_batch.json"],
+      "assertions": {
+        "event_processing_order": ["cancellation", "leave", "leave", "escort_new"],
+        "depends_on_groups_present": true,
+        "escort_fulfillment_rate": { "value": 1.0, "exact": true },
+        "center_duty_coverage.slots_below_required": { "value": 0, "exact": true },
+        "manual_review_count.blocking": { "max": 8 },
+        "change_distance_from_original": { "max": 25 },
+        "cpsat_vs_greedy_objective": "cpsat_leq_greedy"
+      }
+    },
+    {
+      "id": "B7",
+      "name": "EV7 cancellation with no gap to fill (idle release)",
+      "mode": "REPAIR",
+      "events": ["mock/events/ev7_idle_release.json"],
+      "assertions": {
+        "audit_kinds_present": ["service_cancellation", "refill"],
+        "refill_outcome": "idle_release_info",
+        "manual_review_count.blocking": { "value": 0, "exact": true },
+        "change_distance_from_original": { "max": 2 }
+      }
+    },
+    {
+      "id": "B8",
+      "name": "Support parser fixture check with pathologies",
+      "mode": "IMPORT",
+      "events": [],
+      "input": "mock/excel/",
+      "assertions": {
+        "canonical_equivalence_modulo_pathologies": true,
+        "source_ambiguity_count": { "value": 18, "exact": true },
+        "week_pattern_unmangled_count": { "value": 6, "exact": true },
+        "full_name_leak_flags": { "value": 4, "exact": true },
+        "alias_collision_flags": { "value": 3, "exact": true },
+        "silently_dropped_cells": { "value": 0, "exact": true }
+      }
+    },
+    {
+      "id": "B9",
+      "name": "Scarcity stress: male-required bath week with 1 male specialist on leave",
+      "mode": "REPAIR",
+      "events": ["mock/events/ev9_gender_scarcity.json"],
+      "assertions": {
+        "hard_constraint_violations": { "value": 0, "exact": true },
+        "gender_mismatched_assignments": { "value": 0, "exact": true },
+        "unassigned_count.fixed": { "min": 1 },
+        "audit_kinds_present": ["unassigned_task", "data_gap_gender"],
+        "unassigned_diagnosis_mentions": ["gender"]
+      }
+    },
+    {
+      "id": "B10",
+      "name": "Week-pattern month: HC 1,3 vs 2,4 vs 單月 expansion correctness",
+      "mode": "BASELINE",
+      "events": [],
+      "week_start_override": ["2026-06-01", "2026-06-08", "2026-06-15", "2026-06-22"],
+      "assertions": {
+        "hc_occurrences_by_week": { "value": [21, 24, 21, 24], "exact": true },
+        "alternate_month_pair_active_member": "even_month_member",
+        "corrupted_pattern_tasks_blocked_until_review": true
+      }
+    }
+  ]
+}
