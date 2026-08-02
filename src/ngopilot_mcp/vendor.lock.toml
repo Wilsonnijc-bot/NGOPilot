@@ -1,0 +1,104 @@
+schema_version = 1
+digest_algorithm = "sha256"
+tree_digest_format = "sorted POSIX-relative path, NUL, file bytes, NUL; generated build, egg-info, bytecode, and root logs files excluded"
+
+[[applications]]
+name = "CareFlow"
+package_id = "careflow"
+version = "0.4.8"
+source_revision = "50e0d2d3efa0662c5452fb5d6038f489fcd2bc7d"
+payload_path = "payloads/careflow"
+install_root = "payloads/careflow/backend"
+import_root = "backend/app"
+payload_file_count = 59
+payload_tree_sha256 = "cfb3938177da6548deefea18f69b3da8eea2fba2eab87406d60a29266c2349d5"
+install_tree_sha256 = "a21a00249cf1e4fc8c275dc7594ec7b06c6bd7c49b46a96742c763d74abb9c84"
+runtime_lock_path = "runtime_locks/careflow.lock"
+runtime_lock_sha256 = "128caf8ac5c3ed069195aaf2668f12af6ccab065b384f294e26d5300d46f6142"
+runtime_lock_line_count = 2001
+dependency_install_mode = "pip --require-hashes"
+application_wheel_path = "vendor_wheels/careflow_backend-0.4.8-py3-none-any.whl"
+application_wheel_sha256 = "77e9a2e757bf47e8c184d51b94bc343d140a8d03bf9e4891ddf98f3e2ee90000"
+license_path = "payloads/careflow/LICENSE"
+patches = []
+
+[[applications.required_resources]]
+path = "app/services/visit_note_agent/prompts/systemprompt_for_internal_meetingnote.txt"
+sha256 = "5e1b676303888504a5d1d127bba1068df88d2c9fcdb2d1d6854668f722bcac85"
+
+[[applications.required_resources]]
+path = "app/services/visit_note_agent/prompts/systemprompt_for_meetingnote.txt"
+sha256 = "084f4906e59c3ea288a80821ee46b0561c3da3b94c54181a77f39d186d8d4790"
+
+[[applications.required_resources]]
+path = "app/services/visit_note_agent/prompts/template_analysis_prompt.txt"
+sha256 = "efe38c5dce5c4de55572565540f0db18f00b64112fdf73962476322563bb5b68"
+
+[[applications.required_resources]]
+path = "data/form_templates/ccsv.json"
+sha256 = "f4905e90c93c83e3ec38e5f72aef173ba11aa2598b3d82965b3ef0958f655894"
+
+[[applications.required_resources]]
+path = "data/form_templates/cssa.json"
+sha256 = "1c3b104dd344f13f9644f9e360884ea205d81b7608af4bfed8dcddfbb4ee11c6"
+
+[[applications.required_resources]]
+path = "data/form_templates/joyyou.json"
+sha256 = "32877332d2622baeda1b1376b25acbc02c04888d79cbe60e0f17ee7c1f065cde"
+
+[[applications.required_resources]]
+path = "data/form_templates/oala.json"
+sha256 = "d454cba490258ec4f6199bdd361f635e67b0847e16511757d760e8dc403828d0"
+
+[[applications.required_resources]]
+path = "data/form_templates/ssa_307.json"
+sha256 = "1a9bf4dc744b367c12dee4218c40f71cc6b3a37bff9e29e2af80ddd2ee1cbbd2"
+
+[[applications.required_resources]]
+path = "data/templates/CCSV_application_form_(September_2023)_CHI_W3C_proceeded.pdf"
+sha256 = "bd9967994adedea1559d39d53a650215ad8ebae319b6ae80121a08965e011c21"
+
+[[applications.required_resources]]
+path = "data/templates/CSSA_Registration_Form_c_2025-10.pdf"
+sha256 = "94da7fc5e45486c1e75dcfa6448115172424469f0f500e27120b7cb94ce30ec7"
+
+[[applications.required_resources]]
+path = "data/templates/OALA_Simplified Form and notice_chi_012025 rev.pdf"
+sha256 = "96d60c8fce49cf3c5e0003fd0e1501d88dd87b0d3195f813376831aa124e875f"
+
+[[applications.required_resources]]
+path = "data/templates/Online_SWD307_SSA_Application_Form_(Rev)(9_2023).pdf"
+sha256 = "81cb86d2b54e23c54ea19e17e3f5da166cd1bd08bae15947dbe304f38802a744"
+
+[[applications.required_resources]]
+path = "data/templates/joyyou_apply.pdf"
+sha256 = "379507c6ef8c57e17b5aa9ff330da5d5ba79057312aeefad5f566538a21aac13"
+
+[[applications.required_resources]]
+path = "data/templates/volunteer_visit_template.xlsx"
+sha256 = "5e077d6cd14b47c015d1386474f1484d2414ca03a2ea45f5ceb8bdbdbdd1b6c6"
+
+[[applications]]
+name = "RosterCopiilot"
+package_id = "rostercopiilot"
+version = "0.6.0"
+source_revision = "312ac9a84968aef71a7180c3ea132fe628275177"
+payload_path = "payloads/rostercopiilot"
+install_root = "payloads/rostercopiilot"
+import_root = "backend/app"
+payload_file_count = 72
+payload_tree_sha256 = "c97bbd251994086d9b3e3ab576780087e1e71f944549ba84c09eb64ad9653c6a"
+install_tree_sha256 = "c97bbd251994086d9b3e3ab576780087e1e71f944549ba84c09eb64ad9653c6a"
+runtime_lock_path = "runtime_locks/rostercopiilot.lock"
+runtime_lock_sha256 = "830a09446b0ea349b888b1d6455785758976b23e087810e55ec84e55b6590d84"
+runtime_lock_line_count = 708
+dependency_install_mode = "pip --require-hashes"
+application_wheel_path = "vendor_wheels/roster_copiilot-0.6.0-py3-none-any.whl"
+application_wheel_sha256 = "f3b0aa2b7c69d0a9fd33a6acc18249517ab174abe55d9c97099d1b643d011da5"
+license_path = ""
+redistribution_note = "No license file was present in the pinned source baseline; confirm distribution rights before release outside the private deployment."
+patches = []
+
+[[applications.required_resources]]
+path = "docs/照顧員工作分工表2026(HKU).xlsx"
+sha256 = "0f903a53b89f6c2210c9f04147b69a36af4b7f69ebacab0f94d1f43de242af81"
