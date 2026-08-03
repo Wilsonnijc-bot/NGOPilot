@@ -6,7 +6,12 @@ const isLinuxVulkanBuild = process.env.NGOPILOT_DESKTOP_LINUX_VARIANT === 'vulka
 
 let cfg = {
   asar: true,
-  extraResource: ['src/bin', 'src/images', 'src/app-update.yml'],
+  extraResource: [
+    'src/bin',
+    'src/images',
+    'src/app-update.yml',
+    '../../../MCPcode/dist/ngopilot_mcp-0.1.0-py3-none-any.whl',
+  ],
   icon: 'src/images/icon',
   // Windows specific configuration
   win32: {

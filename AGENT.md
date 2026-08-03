@@ -60,6 +60,15 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## 5. Rebrand Goose to NGO Copilot
+
+**Treat all Goose references inside `harness bone/` as legacy branding.**
+
+- Whenever you encounter `Goose` or `goose` anywhere under `harness bone/`, replace it with `NGO Copilot`.
+- Use a code-safe equivalent such as `ngo_copilot`, `ngo-copilot`, or `NgoCopilot` when spaces are not valid, matching the surrounding naming convention.
+- Apply the rebrand consistently to user-facing copy, documentation, filenames, directory names, package names, identifiers, configuration, and assets.
+- Update affected references together so renamed symbols and paths do not leave broken imports, links, commands, builds, or tests.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WHEEL_NAME="ngopilot_mcp-0.1.0-py3-none-any.whl"
+
+find_wheel() {
+  local candidate
+  if [[ -n "${NGOPILOT_MCP_WHEEL:-}" ]]; then
+    [[ -f "${NGOPILOT_MCP_WHEEL}" ]] && printf '%s\n' "${NGOPILOT_MCP_WHEEL}"
+    return
+  fi
+  for candidate in \
+    "${SCRIPT_DIR}/../${WHEEL_NAME}" \
+    "${SCRIPT_DIR}/../../../../../MCPcode/dist/${WHEEL_NAME}"; do
+    if [[ -f "${candidate}" ]]; then
+      printf '%s\n' "${candidate}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+WHEEL_PATH="$(find_wheel || true)"
+if [[ -z "${WHEEL_PATH}" ]]; then
+  echo "NGOPilotMCP wheel not found. Check NGOPILOT_MCP_WHEEL or the packaged ${WHEEL_NAME}." >&2
+  exit 1
+fi
+
+if [[ -x "${SCRIPT_DIR}/uvx" ]]; then
+  UVX_COMMAND="${SCRIPT_DIR}/uvx"
+elif command -v uvx >/dev/null 2>&1; then
+  UVX_COMMAND="$(command -v uvx)"
+else
+  echo "NGOPilotMCP requires the bundled uvx launcher or uvx on PATH." >&2
+  exit 1
+fi
+
+export NGOPILOT_MCP_STATE_DIR="${NGOPILOT_MCP_STATE_DIR:-${HOME}/.ngopilot-mcp}"
+mkdir -p "${NGOPILOT_MCP_STATE_DIR}"
+chmod 700 "${NGOPILOT_MCP_STATE_DIR}" 2>/dev/null || true
+cd "${NGOPILOT_MCP_STATE_DIR}"
+
+# Bootstrap may download pinned dependencies on first use. Keep all setup output
+# away from stdout because stdout is reserved for the MCP stdio protocol.
+"${UVX_COMMAND}" \
+  --python 3.12 \
+  --from "${WHEEL_PATH}" \
+  ngopilot-mcp bootstrap >&2
+
+for runtime in careflow rostercopiilot; do
+  if [[ ! -x "${NGOPILOT_MCP_STATE_DIR}/runtimes/${runtime}/.venv/bin/python" ]]; then
+    echo "NGOPilotMCP bootstrap did not provision the ${runtime} runtime." >&2
+    exit 1
+  fi
+done
+
+exec "${UVX_COMMAND}" \
+  --python 3.12 \
+  --from "${WHEEL_PATH}" \
+  ngopilot-mcp "$@"
