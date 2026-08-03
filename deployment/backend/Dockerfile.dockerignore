@@ -1,0 +1,28 @@
+.git
+.github
+.impeccable.md
+AGENTS.md
+config.py
+report.md
+
+**/.DS_Store
+**/.pytest_cache
+**/.ruff_cache
+**/.venv
+**/*.egg-info
+**/build
+**/__pycache__
+**/*.pyc
+**/coverage
+**/dist
+**/node_modules
+**/target
+
+algo-dependencies
+deployment/frontend
+deployment/backend/Dockerfile
+deployment/backend/Dockerfile.dockerignore
+harness bone/.hermit
+harness bone/docs
+harness bone/documentation
+harness bone/ui

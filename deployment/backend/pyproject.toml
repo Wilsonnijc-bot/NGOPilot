@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ngopilot-gateway"
+version = "0.1.0"
+description = "Cloud authentication and ACP gateway for NGOPilot"
+requires-python = ">=3.11"
+dependencies = [
+  "aiofiles>=24.1,<25",
+  "argon2-cffi>=23.1,<26",
+  "asyncpg>=0.29,<1",
+  "boto3>=1.35,<2",
+  "email-validator>=2.2,<3",
+  "fastapi>=0.115,<1",
+  "httpx>=0.27,<1",
+  "pydantic-settings>=2.6,<3",
+  "python-multipart>=0.0.12,<1",
+  "uvicorn[standard]>=0.32,<1",
+  "websockets>=14,<16",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3,<9",
+  "pytest-asyncio>=0.24,<1",
+]
+
+[project.scripts]
+ngopilot-gateway = "ngopilot_gateway.__main__:main"
+ngopilot-migrate = "ngopilot_gateway.migrate:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["ngopilot_gateway*"]
+
+[tool.setuptools.package-data]
+ngopilot_gateway = ["migrations/*.sql"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+addopts = "-q"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]

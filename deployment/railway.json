@@ -1,0 +1,16 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "deployment/backend/Dockerfile"
+  },
+  "deploy": {
+    "preDeployCommand": "python -m ngopilot_gateway.migrate",
+    "startCommand": "python -m ngopilot_gateway",
+    "healthcheckPath": "/readyz",
+    "healthcheckTimeout": 300,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 5,
+    "numReplicas": 1
+  }
+}

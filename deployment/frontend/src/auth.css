@@ -1,0 +1,133 @@
+body.ngopilot-auth-active {
+  color: #1f1c18;
+  background: #f8f3e8;
+  font-family: "PingFang HK", "PingFang TC", "Helvetica Neue", sans-serif;
+  margin: 0;
+}
+
+.auth-shell,
+.auth-shell * {
+  box-sizing: border-box;
+}
+
+.auth-shell {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f8f3e8;
+}
+
+.auth-panel {
+  width: min(100%, 380px);
+}
+
+.auth-brand {
+  margin-bottom: 44px;
+  color: #a8412c;
+  font-family: "Noto Serif TC", "Songti TC", serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.auth-panel h1 {
+  margin: 0 0 10px;
+  color: #0e0c0a;
+  font-family: "Noto Serif TC", "Songti TC", serif;
+  font-size: 30px;
+  line-height: 1.2;
+}
+
+.auth-intro {
+  margin: 0 0 30px;
+  color: #5a544a;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.auth-modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 26px;
+  border-bottom: 1px solid #dccfb0;
+}
+
+.auth-modes button {
+  min-height: 44px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  color: #5a544a;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.auth-modes button.is-active {
+  border-bottom-color: #a8412c;
+  color: #1f1c18;
+  font-weight: 600;
+}
+
+.auth-form {
+  display: grid;
+  gap: 18px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 7px;
+  color: #3d3933;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.auth-form input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid #dccfb0;
+  border-radius: 4px;
+  padding: 10px 12px;
+  color: #0e0c0a;
+  background: #fcfaf3;
+  font: inherit;
+  outline: none;
+}
+
+.auth-form input:focus {
+  border-color: #a8412c;
+  box-shadow: 0 0 0 3px rgb(168 65 44 / 14%);
+}
+
+.auth-error {
+  margin: -4px 0 0;
+  color: #6b2419;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.auth-submit {
+  min-height: 46px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 4px;
+  color: #fcfaf3;
+  background: #a8412c;
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.auth-submit:hover {
+  background: #8a3120;
+}
+
+.auth-submit:focus-visible,
+.auth-modes button:focus-visible {
+  outline: 2px solid #6b2419;
+  outline-offset: 2px;
+}
+
+.auth-submit:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}

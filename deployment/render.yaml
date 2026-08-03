@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: ngopilot-web
+    runtime: static
+    rootDir: deployment/frontend
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_VERSION
+        value: 24.10.0
+      - key: VITE_API_URL
+        sync: false
+      - key: VITE_GOOSE_DEFAULT_PROVIDER
+        value: openrouter
+      - key: VITE_GOOSE_DEFAULT_MODEL
+        value: openai/gpt-5.6-luna
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: no-referrer
+      - path: /*
+        name: X-Frame-Options
+        value: DENY

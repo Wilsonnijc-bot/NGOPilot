@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#f8f3e8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; connect-src 'self' https: wss:; img-src 'self' data: blob: https:; media-src 'self' data: blob: mediastream: https:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self' data: https:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
+    <title>NGOPilot</title>
+  </head>
+  <body>
+    <div id="root" aria-live="polite"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
