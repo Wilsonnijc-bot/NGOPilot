@@ -3,9 +3,11 @@ import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
+import packageManifest from "./package.json" with { type: "json" };
 
 const frontendRoot = fileURLToPath(new URL(".", import.meta.url));
 const repositoryRoot = path.resolve(frontendRoot, "../..");
+const browserDependencies = Object.keys(packageManifest.dependencies);
 
 export default defineConfig({
   root: frontendRoot,
@@ -21,6 +23,10 @@ export default defineConfig({
         replacement: path.resolve(repositoryRoot, "harness bone/ui/desktop/src/renderer.tsx"),
       },
       {
+        find: "@ngopilot/goose-sdk-schema",
+        replacement: path.resolve(repositoryRoot, "harness bone/ui/sdk/src/generated/zod.gen.ts"),
+      },
+      {
         find: "@aaif/goose-sdk",
         replacement: path.resolve(frontendRoot, "src/goose-sdk-compat.ts"),
       },
@@ -29,7 +35,7 @@ export default defineConfig({
         replacement: path.resolve(frontendRoot, "src/electron-stub.ts"),
       },
     ],
-    dedupe: ["react", "react-dom", "@aaif/goose-sdk", "@agentclientprotocol/sdk"],
+    dedupe: browserDependencies,
   },
   optimizeDeps: {
     exclude: ["@aaif/goose-sdk"],

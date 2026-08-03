@@ -8,6 +8,12 @@ declare module "electron" {
 
 declare module "@ngopilot/renderer";
 
+declare module "@ngopilot/goose-sdk-schema" {
+  import type { ZodTypeAny } from "zod";
+
+  export const zRecipeDto: ZodTypeAny;
+}
+
 interface Window {
   electron: Record<string, any>;
   appConfig: {

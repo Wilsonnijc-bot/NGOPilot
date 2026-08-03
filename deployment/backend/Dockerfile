@@ -21,9 +21,9 @@ WORKDIR /build/harness
 COPY ["harness bone/", "/build/harness/"]
 
 ENV CARGO_REGISTRIES_CRATES_IO_PROTOCOL=sparse
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/build/harness/target \
+RUN --mount=type=cache,id=s/8959f8df-dec1-4921-85af-599a6deb4a6a-/usr/local/cargo/registry,target=/usr/local/cargo/registry \
+    --mount=type=cache,id=s/8959f8df-dec1-4921-85af-599a6deb4a6a-/usr/local/cargo/git,target=/usr/local/cargo/git \
+    --mount=type=cache,id=s/8959f8df-dec1-4921-85af-599a6deb4a6a-/build/harness/target,target=/build/harness/target \
     cargo build --locked --release --package goose-cli --bin ngopilot \
         --no-default-features --features rustls-tls \
     && cp target/release/ngopilot /tmp/ngopilot
@@ -58,7 +58,7 @@ RUN python -m pip install --no-cache-dir --disable-pip-version-check /build/MCPc
 
 COPY deployment/backend/ /build/gateway/
 
-RUN --mount=type=cache,target=/root/.cache/pip \
+RUN --mount=type=cache,id=s/8959f8df-dec1-4921-85af-599a6deb4a6a-/root/.cache/pip,target=/root/.cache/pip \
     python -m pip install --disable-pip-version-check /build/gateway \
     && python -c "from importlib.resources import files; assert files('ngopilot_gateway').joinpath('migrations/001_initial.sql').is_file()" \
     && rm -rf /build/gateway
