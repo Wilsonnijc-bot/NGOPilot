@@ -183,13 +183,14 @@ erasure.
 ## Railway API Service
 
 [`deployment/railway.json`](railway.json) fixes the Dockerfile, migration command,
-start command, readiness check, restart policy, and replica count. In Railway's
+readiness check, restart policy, and replica count. The image's `ENTRYPOINT` drops
+from root to the `ngopilot` user before its default start command runs. In Railway's
 service settings, set the config-file path to `/deployment/railway.json`; a volume
 and database variable reference still require explicit project configuration.
 
 1. Create a Railway service from the repository root with Dockerfile path
-   `deployment/backend/Dockerfile`. Its container command is
-   `python -m ngopilot_gateway`.
+   `deployment/backend/Dockerfile`. Leave Railway's start-command override empty
+   so the image runs its privilege-dropping entrypoint and default command.
 2. Attach one Railway Volume at `/data` before first start.
 3. Add the API variables above through Railway variable references/secrets.
 4. Set the pre-deploy command to `python -m ngopilot_gateway.migrate`; startup also

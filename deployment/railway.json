@@ -6,7 +6,6 @@
   },
   "deploy": {
     "preDeployCommand": "python -m ngopilot_gateway.migrate",
-    "startCommand": "python -m ngopilot_gateway",
     "healthcheckPath": "/readyz",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
