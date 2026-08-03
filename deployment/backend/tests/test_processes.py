@@ -41,7 +41,7 @@ def test_tenant_environment_is_isolated_and_uses_shared_runtimes(settings) -> No
     assert env["NGOPILOT_MCP_ALLOWED_INPUT_ROOTS"] == str(tenant / "uploads")
 
     config = json.loads((tenant / "goose" / "config" / "config.yaml").read_text())
-    assert config["GOOSE_MODEL"] == "openai/gpt-5.6-luna"
+    assert config["GOOSE_MODEL"] == "deepseek/deepseek-v4-flash"
     assert config["extensions"]["ngopilot"]["cmd"] == "ngopilot-mcp"
     assert all(
         config["extensions"][name] == {"enabled": False}

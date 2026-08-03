@@ -43,7 +43,9 @@ async def test_migration_auth_ticket_and_chat_projection() -> None:
         assert await database.consume_ws_ticket(ticket) is not None
         assert await database.consume_ws_ticket(ticket) is None
 
-        await database.upsert_chat_session(user["id"], "agent-session-1", "openai/gpt-5.6-luna")
+        await database.upsert_chat_session(
+            user["id"], "agent-session-1", "deepseek/deepseek-v4-flash"
+        )
         await database.record_message(
             user["id"], "agent-session-1", "user", "prompt", [{"text": "Hello"}]
         )

@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     allowed_origins: str = "http://127.0.0.1:5173,http://localhost:5173"
 
     goose_provider: str = "openrouter"
-    goose_model: str = "openai/gpt-5.6-luna"
+    goose_model: str = "deepseek/deepseek-v4-flash"
     openrouter_api_key: str = ""
     ngopilot_bin: str = "ngopilot"
     ngopilot_mcp_bin: str = "ngopilot-mcp"
@@ -113,8 +113,8 @@ class Settings(BaseSettings):
                 raise ValueError("missing production settings: " + ", ".join(missing))
             if self.goose_provider != "openrouter":
                 raise ValueError("GOOSE_PROVIDER must be openrouter in production")
-            if self.goose_model != "openai/gpt-5.6-luna":
-                raise ValueError("GOOSE_MODEL must be openai/gpt-5.6-luna in production")
+            if self.goose_model != "deepseek/deepseek-v4-flash":
+                raise ValueError("GOOSE_MODEL must be deepseek/deepseek-v4-flash in production")
         return self
 
     @property
