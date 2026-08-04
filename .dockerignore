@@ -1,19 +1,17 @@
 .git/
 .github/
-.impeccable.md
-AGENTS.md
-/config.py
-report.md
-testcases/
-
+.pytest_cache/
+.ruff_cache/
 **/.DS_Store
+**/.mypy_cache/
 **/.pytest_cache/
 **/.ruff_cache/
 **/.venv/
+**/__pycache__/
 **/*.egg-info/
-**/build/
-**/__pycache__
+**/*.log
 **/*.pyc
+**/build/
 **/coverage/
 **/dist/
 **/node_modules/
@@ -25,3 +23,8 @@ harness bone/.hermit/
 harness bone/docs/
 harness bone/documentation/
 harness bone/ui/
+testcases/
+
+Agent-MCP Architecture Design Plan.md
+MCP-pre-build algorithm design plan.md
+report.md
