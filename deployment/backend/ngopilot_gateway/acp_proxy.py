@@ -21,6 +21,7 @@ from .storage import PlaceholderError, StorageService, iter_mappings
 
 logger = logging.getLogger(__name__)
 MAX_ACP_MESSAGE_BYTES = 64 * 1024 * 1024
+MAX_BROWSER_MESSAGE_BYTES = 1024 * 1024
 TENANT_CWD_METHODS = {"session/new", "session/load"}
 UPDATE_CWD_METHOD = "_goose/unstable/session/working-dir/update"
 
@@ -77,6 +78,28 @@ def extract_jobs(value: Any) -> list[tuple[str, str, dict[str, Any]]]:
             tool_name = "ngopilot"
         jobs[job_id] = (tool_name[:96], mapping)
     return [(job_id, tool, payload) for job_id, (tool, payload) in jobs.items()]
+
+
+def browser_message(raw: str, message: dict[str, Any]) -> str:
+    """Keep oversized tool results off the public WebSocket frame."""
+    if len(raw.encode("utf-8")) <= MAX_BROWSER_MESSAGE_BYTES:
+        return raw
+
+    params = message.get("params")
+    update = params.get("update") if isinstance(params, dict) else None
+    if not isinstance(update, dict) or "rawOutput" not in update:
+        return raw
+
+    compacted_update = dict(update)
+    compacted_update["rawOutput"] = {
+        "truncated": True,
+        "message": "Oversized tool output omitted from the browser stream.",
+    }
+    compacted = {
+        **message,
+        "params": {**params, "update": compacted_update},
+    }
+    return json.dumps(compacted, separators=(",", ":"))
 
 
 @dataclass(slots=True)
@@ -268,7 +291,7 @@ async def proxy_websocket(
                     except Exception:
                         logger.exception("Failed to persist ACP metadata for user %s", user_id)
                     storage.schedule_artifact_mirror(user_id, message)
-                    await websocket.send_text(raw)
+                    await websocket.send_text(browser_message(raw, message))
 
             relays = {
                 asyncio.create_task(client_to_agent(), name=f"acp-client-{user_id}"),

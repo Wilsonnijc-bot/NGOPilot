@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from uuid import uuid4
 
 import pytest
 
-from ngopilot_gateway.acp_proxy import AcpRecorder, extract_jobs, isolate_client_request
+from ngopilot_gateway.acp_proxy import (
+    AcpRecorder,
+    browser_message,
+    extract_jobs,
+    isolate_client_request,
+)
 
 
 class RecordingDatabase:
@@ -58,6 +64,40 @@ def test_extract_jobs_finds_nested_tool_payload() -> None:
             {"job_id": "job-123", "tool_name": "roster_copilot", "state": "ready"},
         )
     ]
+
+
+def test_oversized_tool_output_is_compacted_for_browser() -> None:
+    message = {
+        "jsonrpc": "2.0",
+        "method": "session/update",
+        "params": {
+            "sessionId": "session-1",
+            "update": {
+                "sessionUpdate": "tool_call_update",
+                "toolCallId": "call-1",
+                "status": "completed",
+                "content": [{"type": "content", "content": {"type": "text", "text": "Done"}}],
+                "rawOutput": {"result": "x" * (2 * 1024 * 1024)},
+            },
+        },
+    }
+    raw = json.dumps(message)
+
+    compacted = json.loads(browser_message(raw, message))
+
+    assert compacted["params"]["update"]["content"] == message["params"]["update"]["content"]
+    assert compacted["params"]["update"]["rawOutput"] == {
+        "truncated": True,
+        "message": "Oversized tool output omitted from the browser stream.",
+    }
+    assert len(json.dumps(compacted).encode("utf-8")) < 1024 * 1024
+
+
+def test_small_agent_message_is_forwarded_unchanged() -> None:
+    message = {"jsonrpc": "2.0", "method": "session/update", "params": {"update": {}}}
+    raw = json.dumps(message)
+
+    assert browser_message(raw, message) is raw
 
 
 @pytest.mark.parametrize("method", ["session/new", "session/load"])
