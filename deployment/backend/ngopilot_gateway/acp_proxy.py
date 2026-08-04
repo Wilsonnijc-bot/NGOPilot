@@ -299,12 +299,30 @@ async def proxy_websocket(
                         continue
                     if not isinstance(message, dict):
                         continue
+                    browser_raw = browser_message(raw, message)
+                    raw_size = len(raw.encode("utf-8"))
+                    if raw_size > MAX_BROWSER_MESSAGE_BYTES:
+                        params = message.get("params")
+                        nested = isinstance(params, dict) and isinstance(params.get("update"), dict)
+                        update = params.get("update") if nested else params
+                        update_kind = (
+                            update.get("sessionUpdate") if isinstance(update, dict) else None
+                        )
+                        logger.info(
+                            "Oversized ACP relay method=%s envelope=%s update=%s "
+                            "upstream_bytes=%d browser_bytes=%d",
+                            message.get("method"),
+                            "nested" if nested else "flat",
+                            update_kind,
+                            raw_size,
+                            len(browser_raw.encode("utf-8")),
+                        )
                     try:
                         await recorder.agent_message(message)
                     except Exception:
                         logger.exception("Failed to persist ACP metadata for user %s", user_id)
                     storage.schedule_artifact_mirror(user_id, message)
-                    await websocket.send_text(browser_message(raw, message))
+                    await websocket.send_text(browser_raw)
 
             relays = {
                 asyncio.create_task(client_to_agent(), name=f"acp-client-{user_id}"),
