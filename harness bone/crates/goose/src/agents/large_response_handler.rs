@@ -1,8 +1,11 @@
 use crate::config::Config;
 use rmcp::model::{CallToolResult, ContentBlock, ErrorData};
+use serde_json::{json, Map, Value};
 use std::io::Write;
 
 const DEFAULT_LARGE_TEXT_THRESHOLD: usize = 200_000;
+const STRUCTURED_FIELD_LIMIT: usize = 32 * 1024;
+const STRUCTURED_PREVIEW_CHARS: usize = 2 * 1024;
 
 fn large_text_threshold() -> usize {
     Config::global()
@@ -18,6 +21,7 @@ pub fn process_tool_response(
     match response {
         Ok(mut result) => {
             let mut processed_contents = Vec::new();
+            let mut spill_path = None;
 
             for content in result.content {
                 match content.as_text() {
@@ -27,6 +31,7 @@ pub fn process_tool_response(
                             // Write to temp file
                             match write_large_text_to_file(&text_content.text) {
                                 Ok(file_path) => {
+                                    spill_path.get_or_insert_with(|| file_path.clone());
                                     // Create a new text content with reference to the file
                                     let message = format!(
                                         "The response returned from the tool call was larger ({} characters) and is stored in the file which you can use other tools to examine or search in: {}",
@@ -58,9 +63,92 @@ pub fn process_tool_response(
             }
 
             result.content = processed_contents;
+            if let Some(structured_content) = result.structured_content.take() {
+                result.structured_content = Some(compact_structured_content(
+                    structured_content,
+                    threshold,
+                    spill_path.as_deref(),
+                ));
+            }
             Ok(result)
         }
         Err(e) => Err(e),
+    }
+}
+
+fn compact_structured_content(
+    value: Value,
+    threshold: usize,
+    existing_spill_path: Option<&str>,
+) -> Value {
+    let Ok(encoded) = serde_json::to_string(&value) else {
+        return value;
+    };
+    let original_bytes = encoded.len();
+    if original_bytes <= threshold {
+        return value;
+    }
+
+    let spill_path = existing_spill_path
+        .map(ToOwned::to_owned)
+        .or_else(|| write_large_text_to_file(&encoded).ok());
+    let metadata = json!({
+        "truncated": true,
+        "original_bytes": original_bytes,
+        "path": spill_path,
+    });
+    let mut compacted = Map::new();
+    compacted.insert("_goose_large_response".to_string(), metadata.clone());
+
+    if let Value::Object(fields) = value {
+        for (key, field) in fields {
+            if key == "_goose_large_response" {
+                continue;
+            }
+            let Ok(field_json) = serde_json::to_string(&field) else {
+                continue;
+            };
+            if field_json.len() <= STRUCTURED_FIELD_LIMIT {
+                compacted.insert(key, field);
+            } else {
+                compacted.insert(
+                    key,
+                    json!({
+                        "truncated": true,
+                        "original_bytes": field_json.len(),
+                        "preview": field_json
+                            .chars()
+                            .take(STRUCTURED_PREVIEW_CHARS)
+                            .collect::<String>(),
+                    }),
+                );
+            }
+        }
+    } else {
+        compacted.insert(
+            "value".to_string(),
+            json!({
+                "truncated": true,
+                "original_bytes": original_bytes,
+                "preview": encoded
+                    .chars()
+                    .take(STRUCTURED_PREVIEW_CHARS)
+                    .collect::<String>(),
+            }),
+        );
+    }
+
+    let compacted = Value::Object(compacted);
+    if serde_json::to_string(&compacted).is_ok_and(|json| json.len() <= threshold) {
+        compacted
+    } else {
+        json!({
+            "_goose_large_response": metadata,
+            "preview": encoded
+                .chars()
+                .take(STRUCTURED_PREVIEW_CHARS)
+                .collect::<String>(),
+        })
     }
 }
 
@@ -136,6 +224,36 @@ mod tests {
         } else {
             panic!("Expected text content");
         }
+    }
+
+    #[test]
+    fn test_large_structured_response_is_compacted_and_preserves_metadata() {
+        let large_text = "a".repeat(DEFAULT_LARGE_TEXT_THRESHOLD + 1000);
+        let mut result = CallToolResult::success(vec![ContentBlock::text(large_text)]);
+        result.structured_content = Some(json!({
+            "schema_version": "1.0",
+            "tool": "roster_copilot",
+            "job_id": "job_test",
+            "state": "blocked",
+            "result": {"rows": "x".repeat(DEFAULT_LARGE_TEXT_THRESHOLD)},
+            "warnings": ["Missing source data"],
+        }));
+
+        let processed = process_tool_response(Ok(result)).unwrap();
+        let structured = processed.structured_content.unwrap();
+        let marker = structured.get("_goose_large_response").unwrap();
+        let result_marker = structured.get("result").unwrap();
+
+        assert_eq!(structured["job_id"], "job_test");
+        assert_eq!(structured["state"], "blocked");
+        assert_eq!(structured["warnings"], json!(["Missing source data"]));
+        assert_eq!(marker["truncated"], true);
+        assert_eq!(result_marker["truncated"], true);
+        assert!(serde_json::to_string(&structured).unwrap().len() < DEFAULT_LARGE_TEXT_THRESHOLD);
+
+        let path = marker["path"].as_str().unwrap();
+        assert!(Path::new(path).exists());
+        fs::remove_file(path).unwrap();
     }
 
     #[test]
