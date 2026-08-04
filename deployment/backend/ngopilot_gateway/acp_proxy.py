@@ -308,7 +308,7 @@ async def proxy_websocket(
                         update_kind = (
                             update.get("sessionUpdate") if isinstance(update, dict) else None
                         )
-                        logger.info(
+                        logger.warning(
                             "Oversized ACP relay method=%s envelope=%s update=%s "
                             "upstream_bytes=%d browser_bytes=%d",
                             message.get("method"),
