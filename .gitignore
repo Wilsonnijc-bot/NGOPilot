@@ -8,5 +8,5 @@
 **/.ruff_cache/
 *.py[cod]
 *.log
-config.py
+/config.py
 /testcases/

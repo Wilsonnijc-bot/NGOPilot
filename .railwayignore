@@ -2,7 +2,7 @@
 .github
 .impeccable.md
 AGENTS.md
-config.py
+/config.py
 report.md
 testcases
 
