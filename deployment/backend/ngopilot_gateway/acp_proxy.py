@@ -86,18 +86,31 @@ def browser_message(raw: str, message: dict[str, Any]) -> str:
         return raw
 
     params = message.get("params")
-    update = params.get("update") if isinstance(params, dict) else None
-    if not isinstance(update, dict) or "rawOutput" not in update:
+    if not isinstance(params, dict):
+        return raw
+
+    nested_update = params.get("update")
+    update = nested_update if isinstance(nested_update, dict) else params
+    output_key = next(
+        (key for key in ("rawOutput", "raw_output") if key in update),
+        None,
+    )
+    if output_key is None:
         return raw
 
     compacted_update = dict(update)
-    compacted_update["rawOutput"] = {
+    compacted_update[output_key] = {
         "truncated": True,
         "message": "Oversized tool output omitted from the browser stream.",
     }
+    compacted_params = (
+        {**params, "update": compacted_update}
+        if isinstance(nested_update, dict)
+        else compacted_update
+    )
     compacted = {
         **message,
-        "params": {**params, "update": compacted_update},
+        "params": compacted_params,
     }
     return json.dumps(compacted, separators=(",", ":"))
 

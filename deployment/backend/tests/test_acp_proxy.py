@@ -93,6 +93,34 @@ def test_oversized_tool_output_is_compacted_for_browser() -> None:
     assert len(json.dumps(compacted).encode("utf-8")) < 1024 * 1024
 
 
+@pytest.mark.parametrize("output_key", ["rawOutput", "raw_output"])
+def test_oversized_flat_tool_output_is_compacted_for_browser(output_key: str) -> None:
+    message = {
+        "jsonrpc": "2.0",
+        "method": "session/update",
+        "params": {
+            "sessionId": "session-1",
+            "sessionUpdate": "tool_call_update",
+            "toolCallId": "call-1",
+            "status": "completed",
+            "content": [{"type": "content", "content": {"type": "text", "text": "Done"}}],
+            output_key: {"result": "x" * (2 * 1024 * 1024)},
+        },
+    }
+    raw = json.dumps(message)
+
+    compacted = json.loads(browser_message(raw, message))
+
+    assert compacted["params"]["sessionId"] == "session-1"
+    assert compacted["params"]["content"] == message["params"]["content"]
+    assert compacted["params"][output_key] == {
+        "truncated": True,
+        "message": "Oversized tool output omitted from the browser stream.",
+    }
+    assert "update" not in compacted["params"]
+    assert len(json.dumps(compacted).encode("utf-8")) < 1024 * 1024
+
+
 def test_small_agent_message_is_forwarded_unchanged() -> None:
     message = {"jsonrpc": "2.0", "method": "session/update", "params": {"update": {}}}
     raw = json.dumps(message)
