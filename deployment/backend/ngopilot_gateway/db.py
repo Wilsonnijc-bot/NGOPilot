@@ -408,7 +408,7 @@ class Database:
     ) -> asyncpg.Record | None:
         return await self._pool().fetchrow(
             """
-            SELECT id, local_path, status
+            SELECT id, local_path, object_key, size_bytes, sha256, status
             FROM storage_objects
             WHERE user_id = $1
               AND kind = 'upload'
@@ -417,6 +417,20 @@ class Database:
             """,
             user_id,
             placeholder,
+        )
+
+    async def ready_uploads_for_user(self, user_id: UUID) -> list[asyncpg.Record]:
+        return await self._pool().fetch(
+            """
+            SELECT id, local_path, object_key, size_bytes, sha256
+            FROM storage_objects
+            WHERE user_id = $1
+              AND kind = 'upload'
+              AND status = 'ready'
+              AND deleted_at IS NULL
+            ORDER BY created_at, id
+            """,
+            user_id,
         )
 
     async def upsert_artifact(

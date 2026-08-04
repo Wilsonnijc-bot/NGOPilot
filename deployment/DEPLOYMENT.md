@@ -8,14 +8,16 @@ Render Static Site (React/Vite)
         v
 Railway API/ACP service (one replica)
         |-- Railway PostgreSQL: accounts, chat history, jobs, object metadata
-        |-- Railway Volume at /data: tenant ACP and native SQLite state
-        `-- Private S3/R2 bucket: uploads and generated artifacts
+        |-- Railway Volume at /data: active tenant write-back cache
+        `-- Private S3/R2 bucket: uploads, artifacts, and runtime snapshots
 ```
 
 PostgreSQL is the product index and ownership boundary. The attached volume is
-durable runtime state, not a cache: CareFlow and Roster follow-up operations need
-their native SQLite rows and adjacent files. Object storage holds immutable user
-uploads and generated artifacts; PostgreSQL stores their metadata and checksums.
+a bounded write-back cache: CareFlow and Roster need local SQLite rows and adjacent
+files while an agent process is running. When that process stops, the gateway
+commits a versioned runtime snapshot to object storage and removes the tenant's
+local tree. Object storage is the durable home for user uploads, generated
+artifacts, and inactive runtime state; PostgreSQL stores their metadata and checksums.
 
 ## Preconditions
 
@@ -73,20 +75,19 @@ placeholders and must not be deployed literally.
 ```text
 /data/
   tenants/<user_uuid>/
-    goose/       # ACP session/config state
-    workflow/    # MCP jobs, CareFlow, Roster, exports
-    uploads/     # server-side staged inputs
-    tmp/
+    goose/       # restored ACP session/config cache
+    workflow/    # restored MCP/SQLite/job cache
+    uploads/     # restored or newly staged S3 inputs
+    tmp/         # never snapshotted; discarded with the tenant cache
 ```
 
 Database `storage_objects.local_path` values are relative to `DATA_ROOT`. Reject
 absolute paths and any rebased path that escapes `/data`.
 
 Shared MCP worker environments live at `/opt/ngopilot/shared/runtimes` inside the
-container image. They are immutable release assets, not tenant data and not volume
+container image. They are immutable release assets, not tenant data or snapshot
 content. Tenant workflow directories may contain symlinks to those image paths;
-backups restore the tenant trees and recreate the runtime links from the matching
-image revision.
+cache restore recreates those links from the running image revision.
 
 ### Render build variables
 
@@ -143,7 +144,7 @@ Schema ownership is intentionally small:
 - `chat_sessions` maps one user to an internal ACP session;
 - `messages` retains bounded structured ACP content, not flattened text;
 - `jobs` keeps a bounded public result plus the native reference needed to resume;
-- `storage_objects` records private S3/R2 objects and root-relative volume paths.
+- `storage_objects` records private S3/R2 objects and their root-relative cache paths.
 
 Native CareFlow and Roster tables remain authoritative for their domain rules.
 Copying their large documents into PostgreSQL messages or job history is expressly
@@ -158,10 +159,18 @@ Railway identity only the object actions and prefixes the API uses.
 Use opaque keys without names, emails, or document text:
 
 ```text
-tenants/<user_uuid>/uploads/<object_uuid>/<safe_filename>
-tenants/<user_uuid>/artifacts/<sha256>/<safe_filename>
+tenants/<user_uuid>/uploads/<object_uuid>
+tenants/<user_uuid>/artifacts/<object_uuid>
+tenants/<user_uuid>/runtime-snapshots/current.json
+tenants/<user_uuid>/runtime-snapshots/<snapshot_uuid>/manifest.json
+tenants/<user_uuid>/runtime-snapshots/<snapshot_uuid>/objects/<opaque_object_id>
 native-backups/<utc_timestamp>/<manifest_or_archive>
 ```
+
+The runtime pointer is replaced only after every file and the immutable snapshot
+manifest have uploaded successfully. Restores verify each file's byte size and
+SHA-256 before exposing the cache to an agent. A failed snapshot keeps the local
+tenant tree for retry; a failed restore never receives the cache-ready marker.
 
 The current browser sends uploads through the authenticated API, so the bucket
 does not need public CORS. If direct presigned uploads are added later, allow only
@@ -264,22 +273,22 @@ pass. When adding custom domains, update `PUBLIC_API_URL`, `VITE_API_URL`, and
 
 ## Backup and Restore
 
-Railway PostgreSQL, the Railway Volume, and S3/R2 are one recovery set. A database
-backup alone cannot resume CareFlow or Roster jobs.
+Railway PostgreSQL and S3/R2 are the durable recovery set. The Railway Volume is a
+write-back cache and must not be the only copy of a disconnected tenant's state.
+A PostgreSQL backup alone cannot resume CareFlow or Roster jobs.
 
 ### Backup
 
 1. Stop accepting new mutations and wait for active native workers to finish.
-2. Create a timestamped PostgreSQL custom-format dump with `pg_dump`.
-3. Use SQLite's online `.backup` API for every database below `/data/tenants`.
-   Do not copy a live main `.db` file without its WAL.
-4. Copy each tenant's adjacent native files, including CareFlow transcript vault
-   files/key, Roster exports, and job manifests. Do not copy the immutable shared
-   runtimes from `/opt`; retain the referenced container image instead.
-5. Write a manifest containing hashes, image revision, migration versions,
+2. Stop the tenant processes normally so each runtime snapshot commits to S3 and
+   its local cache is evicted. Do not copy live SQLite files without their WAL.
+3. Create a timestamped PostgreSQL custom-format dump with `pg_dump`.
+4. Retain every runtime snapshot and upload/artifact object referenced by the live
+   database and snapshot pointers. Retain the referenced container image as well.
+5. Write a backup manifest containing hashes, image revision, migration versions,
    `DATA_ROOT`, and object-store bucket/region.
-6. Upload the encrypted dump, SQLite snapshots, native trees, and manifest to the
-   private backup prefix, then resume traffic.
+6. Upload the encrypted dump and manifest to the private backup prefix, preserve
+   the referenced object versions, then resume traffic.
 
 Use a separate backup retention policy from user artifact retention. Test restore
 regularly; an untested archive is not a backup.
@@ -302,14 +311,14 @@ and every object-store version before the product calls the operation irreversib
 
 ### Restore
 
-1. Stop the API and attach an empty volume at the same `/data` mount.
-2. Restore PostgreSQL and the volume from the same backup timestamp.
-3. Restore object versions referenced by `storage_objects`.
-4. Run `PRAGMA integrity_check` on every SQLite database and
+1. Stop the API and attach an empty cache volume at the same `/data` mount.
+2. Restore PostgreSQL and the S3 object versions from the same recovery point.
+3. Start one API replica and let the gateway restore each tenant snapshot on demand.
+4. Run `PRAGMA integrity_check` on every restored SQLite database and
    `PRAGMA foreign_key_check` where foreign keys are enabled.
 5. Verify object size/SHA-256, native references, templates, and paths against the
    backup manifest.
-6. Start one API replica, run reconciliation, then reopen traffic.
+6. Run reconciliation, confirm cache eviction/re-restore, then reopen traffic.
 
 CareFlow stores most paths relative to its data root, but legacy MCP/Roster data
 can contain absolute paths. Preserve the `/data` mount and rebase/validate any
@@ -326,8 +335,10 @@ profile:
 - one complete CareFlow workflow and one complete Roster workflow;
 - upload size/type rejection and private artifact download authorization;
 - S3/R2 objects are not anonymously readable;
-- a backend restart preserves PostgreSQL, `/data`, and artifact access;
-- migration version, PostgreSQL backup, volume backup, and restore test are current.
+- a backend restart with an empty `/data` cache restores chat/native state and
+  artifact access from PostgreSQL plus S3/R2;
+- migration version, PostgreSQL backup, object snapshot backup, and restore test
+  are current.
 
 Never report a successful deployment while these checks or a restore test are
 failing.

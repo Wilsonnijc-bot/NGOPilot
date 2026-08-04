@@ -62,13 +62,18 @@ def create_app(settings_override: Settings | None = None) -> FastAPI:
         await apply_migrations(app_settings.database_url, migration_directory())
         db = Database(app_settings)
         await db.connect()
-        processes = TenantProcessManager(app_settings)
         storage = StorageService(app_settings, db)
+        processes = TenantProcessManager(
+            app_settings,
+            restore_cache=storage.restore_tenant_cache,
+            evict_cache=storage.persist_and_evict_tenant_cache,
+        )
         app.state.settings = app_settings
         app.state.db = db
         app.state.processes = processes
         app.state.storage = storage
         try:
+            await storage.evict_stale_tenant_caches()
             yield
         finally:
             await processes.stop_all()

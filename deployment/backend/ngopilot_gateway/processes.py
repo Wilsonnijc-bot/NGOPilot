@@ -12,6 +12,7 @@ import socket
 from dataclasses import dataclass
 from pathlib import Path
 from time import monotonic
+from typing import Awaitable, Callable
 from uuid import UUID
 
 import httpx
@@ -75,8 +76,16 @@ class ManagedProcess:
 
 
 class TenantProcessManager:
-    def __init__(self, settings: Settings):
+    def __init__(
+        self,
+        settings: Settings,
+        *,
+        restore_cache: Callable[[UUID], Awaitable[None]] | None = None,
+        evict_cache: Callable[[UUID], Awaitable[None]] | None = None,
+    ):
         self.settings = settings
+        self._restore_cache = restore_cache
+        self._evict_cache = evict_cache
         self._processes: dict[UUID, ManagedProcess] = {}
         self._locks: dict[UUID, asyncio.Lock] = {}
 
@@ -161,6 +170,8 @@ class TenantProcessManager:
         return runtimes_ready and resources_ready
 
     async def _start(self, user_id: UUID) -> ManagedProcess:
+        if self._restore_cache is not None:
+            await self._restore_cache(user_id)
         tenant_root = self.tenant_root(user_id)
         env = self._prepare_tenant(tenant_root)
         port = _free_loopback_port()
@@ -238,7 +249,7 @@ class TenantProcessManager:
                     "timeout": 2100,
                     "bundled": True,
                     "available_tools": [],
-                }
+                },
             },
         }
         config_path = goose_root / "config" / "config.yaml"
@@ -348,3 +359,9 @@ class TenantProcessManager:
             await asyncio.gather(managed.stderr_task, return_exceptions=True)
             managed.stderr_task = None
         logger.info("Stopped tenant ACP process for user %s", managed.user_id)
+        if self._evict_cache is not None:
+            try:
+                await self._evict_cache(managed.user_id)
+            except Exception:
+                # A failed snapshot must retain the local cache for a later retry.
+                logger.exception("Failed to persist tenant cache for user %s", managed.user_id)
