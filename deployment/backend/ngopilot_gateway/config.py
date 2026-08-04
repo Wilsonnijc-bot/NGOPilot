@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     ngopilot_mcp_bin: str = "ngopilot-mcp"
     ngopilot_mcp_shared_state_dir: Path = Path("/opt/ngopilot/shared")
     ngopilot_process_startup_seconds: float = Field(default=90, gt=0, le=600)
-    ngopilot_process_idle_seconds: float = Field(default=900, ge=0, le=86400)
+    ngopilot_process_idle_seconds: float = Field(default=0, ge=0, le=86400)
 
     database_url: str = ""
     database_pool_min_size: int = Field(default=1, ge=1, le=20)

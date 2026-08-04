@@ -2,10 +2,15 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 from uuid import uuid4
+
+import pytest
 
 from ngopilot_gateway.processes import (
     DISABLED_CLOUD_EXTENSIONS,
+    ManagedProcess,
     TenantProcessManager,
     _redact,
 )
@@ -54,3 +59,25 @@ def test_redaction_removes_runtime_secrets() -> None:
     assert _redact("key=secret token=internal", "secret", "internal") == (
         "key=[REDACTED] token=[REDACTED]"
     )
+
+
+@pytest.mark.asyncio
+async def test_release_stops_disconnected_tenant_immediately(settings) -> None:
+    manager = TenantProcessManager(settings)
+    user_id = uuid4()
+    managed = ManagedProcess(
+        user_id=user_id,
+        process=SimpleNamespace(returncode=None),
+        port=1234,
+        secret="secret",
+        tenant_root=manager.tenant_root(user_id),
+        refs=1,
+    )
+    manager._processes[user_id] = managed
+    manager._stop = AsyncMock()
+
+    assert settings.ngopilot_process_idle_seconds == 0
+    await manager.release(user_id)
+
+    manager._stop.assert_awaited_once_with(managed)
+    assert user_id not in manager._processes

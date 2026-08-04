@@ -22,21 +22,22 @@ pub fn process_tool_response(
         Ok(mut result) => {
             let mut processed_contents = Vec::new();
             let mut spill_path = None;
+            let mut compacted_large_response = false;
 
             for content in result.content {
                 match content.as_text() {
                     Some(text_content) => {
                         // Check if text exceeds threshold
                         if text_content.text.chars().count() > threshold {
+                            compacted_large_response = true;
                             // Write to temp file
                             match write_large_text_to_file(&text_content.text) {
                                 Ok(file_path) => {
                                     spill_path.get_or_insert_with(|| file_path.clone());
-                                    // Create a new text content with reference to the file
-                                    let message = format!(
-                                        "The response returned from the tool call was larger ({} characters) and is stored in the file which you can use other tools to examine or search in: {}",
-                                        text_content.text.chars().count(),
-                                        file_path
+                                    let message = compact_large_text_message(
+                                        &text_content.text,
+                                        threshold,
+                                        &file_path,
                                     );
                                     processed_contents.push(ContentBlock::text(message));
                                 }
@@ -64,11 +65,16 @@ pub fn process_tool_response(
 
             result.content = processed_contents;
             if let Some(structured_content) = result.structured_content.take() {
-                result.structured_content = Some(compact_structured_content(
+                let (structured_content, was_compacted) = compact_structured_content(
                     structured_content,
                     threshold,
                     spill_path.as_deref(),
-                ));
+                );
+                compacted_large_response |= was_compacted;
+                result.structured_content = Some(structured_content);
+            }
+            if compacted_large_response {
+                trim_allocator();
             }
             Ok(result)
         }
@@ -76,17 +82,33 @@ pub fn process_tool_response(
     }
 }
 
+fn compact_large_text_message(text: &str, threshold: usize, spill_path: &str) -> String {
+    let character_count = text.chars().count();
+    if let Ok(value) = serde_json::from_str::<Value>(text) {
+        let (summary, _) = compact_structured_content(value, threshold, Some(spill_path));
+        if let Ok(summary) = serde_json::to_string_pretty(&summary) {
+            return format!(
+                "The tool response was larger ({character_count} characters). The full response is stored at {spill_path}.\n\nCompact JSON summary:\n{summary}"
+            );
+        }
+    }
+
+    format!(
+        "The response returned from the tool call was larger ({character_count} characters) and is stored in the file which you can use other tools to examine or search in: {spill_path}"
+    )
+}
+
 fn compact_structured_content(
     value: Value,
     threshold: usize,
     existing_spill_path: Option<&str>,
-) -> Value {
+) -> (Value, bool) {
     let Ok(encoded) = serde_json::to_string(&value) else {
-        return value;
+        return (value, false);
     };
     let original_bytes = encoded.len();
     if original_bytes <= threshold {
-        return value;
+        return (value, false);
     }
 
     let spill_path = existing_spill_path
@@ -140,17 +162,31 @@ fn compact_structured_content(
 
     let compacted = Value::Object(compacted);
     if serde_json::to_string(&compacted).is_ok_and(|json| json.len() <= threshold) {
-        compacted
+        (compacted, true)
     } else {
-        json!({
-            "_goose_large_response": metadata,
-            "preview": encoded
-                .chars()
-                .take(STRUCTURED_PREVIEW_CHARS)
-                .collect::<String>(),
-        })
+        (
+            json!({
+                "_goose_large_response": metadata,
+                "preview": encoded
+                    .chars()
+                    .take(STRUCTURED_PREVIEW_CHARS)
+                    .collect::<String>(),
+            }),
+            true,
+        )
     }
 }
+
+#[cfg(all(target_os = "linux", target_env = "gnu"))]
+fn trim_allocator() {
+    // SAFETY: malloc_trim only asks glibc to release currently free heap pages.
+    unsafe {
+        libc::malloc_trim(0);
+    }
+}
+
+#[cfg(not(all(target_os = "linux", target_env = "gnu")))]
+fn trim_allocator() {}
 
 /// Write large text content to a temporary file
 fn write_large_text_to_file(content: &str) -> Result<String, std::io::Error> {
@@ -224,6 +260,39 @@ mod tests {
         } else {
             panic!("Expected text content");
         }
+    }
+
+    #[test]
+    fn test_large_json_text_preserves_actionable_summary() {
+        let large_text = json!({
+            "schema_version": "1.0",
+            "tool": "roster_copilot",
+            "job_id": "job_test",
+            "state": "blocked",
+            "result": {"rows": "x".repeat(DEFAULT_LARGE_TEXT_THRESHOLD)},
+            "warnings": ["Missing source data"],
+        })
+        .to_string();
+        let response = Ok(CallToolResult::success(vec![ContentBlock::text(
+            large_text.clone(),
+        )]));
+
+        let processed = process_tool_response(response).unwrap();
+        let text = &processed.content[0].as_text().unwrap().text;
+        let summary_text = text
+            .split_once("Compact JSON summary:\n")
+            .expect("large JSON response should include a compact summary")
+            .1;
+        let summary: Value = serde_json::from_str(summary_text).unwrap();
+
+        assert_eq!(summary["job_id"], "job_test");
+        assert_eq!(summary["state"], "blocked");
+        assert_eq!(summary["warnings"], json!(["Missing source data"]));
+        assert_eq!(summary["result"]["truncated"], true);
+
+        let path = summary["_goose_large_response"]["path"].as_str().unwrap();
+        assert_eq!(fs::read_to_string(path).unwrap(), large_text);
+        fs::remove_file(path).unwrap();
     }
 
     #[test]
