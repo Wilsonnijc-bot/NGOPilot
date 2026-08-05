@@ -34,7 +34,7 @@ describe('MarkdownContent', () => {
         const link = await screen.findByRole('link', { name: 'Download visit report.xlsx' });
 
         expect(link).toHaveAttribute('href', path);
-        expect(link).toHaveTextContent('visit report.xlsx');
+        expect(link).toHaveTextContent('Download visit report.xlsx');
         expect(container).not.toHaveTextContent(path);
 
         fireEvent.click(link);

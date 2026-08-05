@@ -1,11 +1,31 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Download } from 'lucide-react';
+import { defineMessages, useIntl } from '../i18n';
 import {
   artifactDownloadsEnabled,
   artifactFilename,
   artifactFilesystemPath,
   findArtifactPaths,
 } from '../utils/artifactPaths';
+
+const i18n = defineMessages({
+  download: {
+    id: 'artifactPathLink.download',
+    defaultMessage: 'Download {filename}',
+  },
+  preparing: {
+    id: 'artifactPathLink.preparing',
+    defaultMessage: 'Preparing download...',
+  },
+  failedTitle: {
+    id: 'artifactPathLink.failedTitle',
+    defaultMessage: 'Download Failed',
+  },
+  failedMessage: {
+    id: 'artifactPathLink.failedMessage',
+    defaultMessage: 'The generated file could not be downloaded.',
+  },
+});
 
 interface ArtifactPathLinkProps {
   path: string;
@@ -20,27 +40,53 @@ export function ArtifactPathLink({
   compact = false,
   inverted = false,
 }: ArtifactPathLinkProps) {
+  const intl = useIntl();
+  const [isDownloading, setIsDownloading] = useState(false);
   const filesystemPath = artifactFilesystemPath(path);
   const filename = artifactFilename(filesystemPath);
   const color = inverted
-    ? 'text-gray-100 decoration-gray-500 hover:decoration-gray-100 focus-visible:ring-gray-400'
-    : 'text-text-primary decoration-border-primary hover:decoration-text-primary focus-visible:ring-border-primary';
+    ? 'border-gray-600 bg-gray-800 text-gray-100 hover:bg-gray-700 focus-visible:ring-gray-400'
+    : 'border-border-primary bg-background-secondary text-text-primary hover:bg-background-primary focus-visible:ring-border-primary';
+
+  const handleDownload = async (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (isDownloading) return;
+
+    setIsDownloading(true);
+    try {
+      await window.electron.openExternal(filesystemPath);
+    } catch {
+      await window.electron.showMessageBox({
+        type: 'error',
+        buttons: ['OK'],
+        title: intl.formatMessage(i18n.failedTitle),
+        message: intl.formatMessage(i18n.failedMessage),
+        detail: filename,
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   return (
     <a
       href={filesystemPath}
       title={filesystemPath}
       aria-label={`Download ${filename}`}
+      aria-busy={isDownloading}
       data-artifact-path={filesystemPath}
-      className={`inline-flex max-w-full items-center gap-1 align-baseline font-medium underline underline-offset-2 focus-visible:outline-none focus-visible:ring-2 ${color}`}
-      onClick={(event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        void window.electron.openExternal(filesystemPath);
-      }}
+      className={`my-0.5 inline-flex max-w-full cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 align-middle font-sans text-xs font-medium no-underline transition-colors focus-visible:outline-none focus-visible:ring-2 disabled:pointer-events-none ${color}`}
+      onClick={(event) => void handleDownload(event)}
     >
       <Download className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" />
-      <span className={compact ? 'truncate' : 'break-all'}>{children ?? filename}</span>
+      <span className={compact ? 'truncate' : 'break-all'}>
+        {isDownloading
+          ? intl.formatMessage(i18n.preparing)
+          : intl.formatMessage(i18n.download, {
+              filename: children ?? filename,
+            })}
+      </span>
     </a>
   );
 }
