@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   appendLocalAttachmentPaths,
   getLocalAttachmentPath,
+  isLocalAttachmentSubmittable,
   resolveLocalAttachmentPath,
   shouldSendImageToModel,
 } from './localAttachments';
@@ -58,8 +59,58 @@ describe('appendLocalAttachmentPaths', () => {
     expect(persistAttachment).not.toHaveBeenCalled();
   });
 
+  it('persists when the platform path bridge throws', async () => {
+    const file = new File(['image'], 'form.png', { type: 'image/png' });
+    const persistAttachment = vi.fn(async () => '/tmp/fallback.png');
+
+    await expect(
+      resolveLocalAttachmentPath(
+        file,
+        () => {
+          throw new Error('path unavailable');
+        },
+        persistAttachment
+      )
+    ).resolves.toBe('/tmp/fallback.png');
+  });
+
+  it('returns no path when both platform bridges fail', async () => {
+    const file = new File(['image'], 'form.png', { type: 'image/png' });
+
+    await expect(
+      resolveLocalAttachmentPath(
+        file,
+        () => '',
+        async () => {
+          throw new Error('persistence failed');
+        }
+      )
+    ).resolves.toBeUndefined();
+  });
+
   it('sends only pathless clipboard images to the language model', () => {
     expect(shouldSendImageToModel('/tmp/form.png')).toBe(false);
     expect(shouldSendImageToModel()).toBe(true);
+  });
+
+  it('keeps a path submittable when only its preview fails', () => {
+    expect(
+      isLocalAttachmentSubmittable({
+        path: '/tmp/form.png',
+        error: 'preview failed',
+        isImage: true,
+        isLoading: false,
+      })
+    ).toBe(true);
+  });
+
+  it('rejects failed pathless attachments', () => {
+    expect(
+      isLocalAttachmentSubmittable({
+        error: 'path unavailable',
+        isImage: true,
+        isLoading: false,
+      })
+    ).toBe(false);
   });
 });

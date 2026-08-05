@@ -13,19 +13,44 @@ export async function resolveLocalAttachmentPath(
   getPathForFile: (file: File) => string,
   persistAttachment?: (fileName: string, contentType: string, data: ArrayBuffer) => Promise<string>
 ): Promise<string | undefined> {
-  const existingPath = getLocalAttachmentPath(file, getPathForFile);
+  let existingPath: string | undefined;
+  try {
+    existingPath = getLocalAttachmentPath(file, getPathForFile);
+  } catch {
+    existingPath = undefined;
+  }
   if (existingPath || !persistAttachment) {
     return existingPath;
   }
 
-  const persistedPath = (
-    await persistAttachment(file.name, file.type, await file.arrayBuffer())
-  ).trim();
-  return persistedPath || undefined;
+  try {
+    const persistedPath = (
+      await persistAttachment(file.name, file.type, await file.arrayBuffer())
+    ).trim();
+    return persistedPath || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function shouldSendImageToModel(path?: string): boolean {
   return !path;
+}
+
+export function isLocalAttachmentSubmittable(attachment: {
+  path?: string;
+  dataUrl?: string;
+  error?: string;
+  isImage?: boolean;
+  isLoading?: boolean;
+}): boolean {
+  if (attachment.isLoading) {
+    return false;
+  }
+  if (attachment.path) {
+    return true;
+  }
+  return attachment.isImage !== false && Boolean(attachment.dataUrl && !attachment.error);
 }
 
 export function appendLocalAttachmentPaths(text: string, paths: string[]): string {

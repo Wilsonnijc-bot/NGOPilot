@@ -37,6 +37,7 @@ import { compressImageDataUrl } from '../utils/conversionUtils';
 import { fetchCanonicalModelInfo } from '../utils/canonical';
 import {
   appendLocalAttachmentPaths,
+  isLocalAttachmentSubmittable,
   resolveLocalAttachmentPath,
   shouldSendImageToModel,
 } from '../utils/localAttachments';
@@ -823,12 +824,8 @@ export default function ChatInput({
   const appendLocalAttachments = useCallback(
     (text: string): string => {
       const localPaths = [
-        ...pastedImages
-          .filter((image) => image.path && !image.error && !image.isLoading)
-          .map((image) => image.path!),
-        ...allDroppedFiles
-          .filter((file) => file.path && !file.error && !file.isLoading)
-          .map((file) => file.path),
+        ...pastedImages.filter((image) => image.path).map((image) => image.path!),
+        ...allDroppedFiles.filter((file) => file.path).map((file) => file.path),
       ];
 
       return appendLocalAttachmentPaths(text, localPaths);
@@ -925,6 +922,16 @@ export default function ChatInput({
         console.error('Failed to get pasted image path:', file.name, error);
       }
 
+      if (!path) {
+        newImages.push({
+          id: imageId,
+          dataUrl: '',
+          isLoading: false,
+          error: intl.formatMessage(i18n.failedToReadImage),
+        });
+        continue;
+      }
+
       // Add the image with loading state
       newImages.push({
         id: imageId,
@@ -938,12 +945,23 @@ export default function ChatInput({
       reader.onload = async (e) => {
         const dataUrl = e.target?.result as string;
         if (dataUrl) {
-          const compressedDataUrl = await compressImageDataUrl(dataUrl);
-          setPastedImages((prev) =>
-            prev.map((img) =>
-              img.id === imageId ? { ...img, dataUrl: compressedDataUrl, isLoading: false } : img
-            )
-          );
+          try {
+            const compressedDataUrl = await compressImageDataUrl(dataUrl);
+            setPastedImages((prev) =>
+              prev.map((img) =>
+                img.id === imageId ? { ...img, dataUrl: compressedDataUrl, isLoading: false } : img
+              )
+            );
+          } catch (error) {
+            console.error('Failed to prepare pasted image preview:', file.name, error);
+            setPastedImages((prev) =>
+              prev.map((img) =>
+                img.id === imageId
+                  ? { ...img, error: intl.formatMessage(i18n.failedToReadImage), isLoading: false }
+                  : img
+              )
+            );
+          }
         }
       };
       reader.onerror = () => {
@@ -1111,8 +1129,8 @@ export default function ChatInput({
     !isLoading &&
     !queueProcessingBlocked &&
     (displayValue.trim() ||
-      pastedImages.some((img) => img.dataUrl && !img.error && !img.isLoading) ||
-      allDroppedFiles.some((file) => !file.error && !file.isLoading));
+      pastedImages.some(isLocalAttachmentSubmittable) ||
+      allDroppedFiles.some(isLocalAttachmentSubmittable));
 
   const performSubmit = useCallback(
     (text?: string) => {
@@ -1239,8 +1257,8 @@ export default function ChatInput({
       !isLoading &&
       !queueProcessingBlocked &&
       (displayValue.trim() ||
-        pastedImages.some((img) => img.dataUrl && !img.error && !img.isLoading) ||
-        allDroppedFiles.some((file) => !file.error && !file.isLoading));
+        pastedImages.some(isLocalAttachmentSubmittable) ||
+        allDroppedFiles.some(isLocalAttachmentSubmittable));
     if (canSubmit) {
       performSubmit();
     }
@@ -1279,6 +1297,15 @@ export default function ChatInput({
 
       if (!path) {
         console.error('Failed to create an attachment path for image:', file.name);
+        setPastedImages((prev) => [
+          ...prev,
+          {
+            id: uniqueId,
+            dataUrl: '',
+            isLoading: false,
+            error: intl.formatMessage(i18n.failedToReadImage),
+          },
+        ]);
         setIsFilePickerOpen(false);
         return;
       }
@@ -1298,14 +1325,25 @@ export default function ChatInput({
       reader.onload = async (evt) => {
         const dataUrl = evt.target?.result as string;
         if (dataUrl) {
-          const compressedDataUrl = await compressImageDataUrl(dataUrl);
-          setPastedImages((prev) =>
-            prev.map((img) =>
-              img.id === uniqueId
-                ? { ...img, dataUrl: compressedDataUrl, isLoading: false, error: undefined }
-                : img
-            )
-          );
+          try {
+            const compressedDataUrl = await compressImageDataUrl(dataUrl);
+            setPastedImages((prev) =>
+              prev.map((img) =>
+                img.id === uniqueId
+                  ? { ...img, dataUrl: compressedDataUrl, isLoading: false, error: undefined }
+                  : img
+              )
+            );
+          } catch (error) {
+            console.error('Failed to prepare image preview:', file.name, error);
+            setPastedImages((prev) =>
+              prev.map((img) =>
+                img.id === uniqueId
+                  ? { ...img, error: intl.formatMessage(i18n.failedToReadImage), isLoading: false }
+                  : img
+              )
+            );
+          }
         }
       };
       reader.onerror = () => {
@@ -1328,6 +1366,18 @@ export default function ChatInput({
 
       if (!path) {
         console.error('Failed to create an attachment path for file:', file.name);
+        setLocalDroppedFiles((prev) => [
+          ...prev,
+          {
+            id: `upload-error-${Date.now()}`,
+            path: '',
+            name: file.name,
+            type: file.type,
+            isImage: false,
+            isLoading: false,
+            error: 'Failed to prepare attachment',
+          },
+        ]);
         setIsFilePickerOpen(false);
         return;
       }
@@ -1376,8 +1426,8 @@ export default function ChatInput({
 
   const hasSubmittableContent =
     displayValue.trim() ||
-    pastedImages.some((img) => img.dataUrl && !img.error && !img.isLoading) ||
-    allDroppedFiles.some((file) => !file.error && !file.isLoading);
+    pastedImages.some(isLocalAttachmentSubmittable) ||
+    allDroppedFiles.some(isLocalAttachmentSubmittable);
   const isAnyImageLoading = pastedImages.some((img) => img.isLoading);
   const isAnyDroppedFileLoading = allDroppedFiles.some((file) => file.isLoading);
 
