@@ -30,6 +30,7 @@ PLACEHOLDER_PATTERN = re.compile(
     r"[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/[^\s\"<>]+"
 )
 SAFE_FILENAME_PATTERN = re.compile(r"[^A-Za-z0-9._-]+")
+TRAILING_PATH_PUNCTUATION = "),.;:!?"
 RUNTIME_CACHE_AREAS = ("goose", "workflow")
 RUNTIME_CACHE_MARKER = ".ngopilot-s3-cache"
 RUNTIME_SNAPSHOT_VERSION = 1
@@ -140,6 +141,17 @@ def iter_mappings(value: Any, *, parse_json_strings: bool = True) -> Iterator[di
             except (json.JSONDecodeError, ValueError):
                 return
             yield from iter_mappings(decoded, parse_json_strings=False)
+
+
+def iter_strings(value: Any) -> Iterator[str]:
+    if isinstance(value, str):
+        yield value
+    elif isinstance(value, dict):
+        for child in value.values():
+            yield from iter_strings(child)
+    elif isinstance(value, list):
+        for child in value:
+            yield from iter_strings(child)
 
 
 class StorageService:
@@ -349,13 +361,22 @@ class StorageService:
                 detail="Object storage is not configured",
             )
 
+        await self._wait_for_artifact_tasks(user_id)
+
         try:
             supplied = Path(local_path)
             if supplied.is_absolute():
                 relative = supplied.relative_to(self.settings.data_root)
             else:
                 relative = supplied
-            relative = tenant_relative_path(user_id, relative.as_posix(), "workflow")
+            expected = Path("tenants") / str(user_id)
+            if (
+                relative.is_absolute()
+                or ".." in relative.parts
+                or not relative.is_relative_to(expected)
+                or relative == expected
+            ):
+                raise PlaceholderError("Stored artifact path is invalid")
         except (PlaceholderError, ValueError) as error:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Artifact not found"
@@ -393,43 +414,62 @@ class StorageService:
         if self._s3 is None:
             return
         seen: set[Path] = set()
+        raw_paths: set[str] = set()
+        job_id: str | None = None
         for mapping in iter_mappings(payload):
-            job_id = mapping.get("job_id")
-            if not isinstance(job_id, str) or len(job_id) > 96:
-                job_id = None
+            candidate_job_id = mapping.get("job_id")
+            if isinstance(candidate_job_id, str) and len(candidate_job_id) <= 96:
+                job_id = candidate_job_id
             for key in ("path", "output_path", "artifact_path"):
                 raw_path = mapping.get(key)
-                if not isinstance(raw_path, str) or not raw_path.startswith("/"):
-                    continue
+                if isinstance(raw_path, str) and raw_path.startswith("/"):
+                    raw_paths.add(raw_path)
+
+        tenant_root = (self.settings.data_root / "tenants" / str(user_id)).resolve()
+        path_pattern = re.compile(
+            re.escape(str(tenant_root)) + r"/[^\r\n\"'`<>\[\]{}|\\]+"
+        )
+        for text in iter_strings(payload):
+            stripped = text.lstrip()
+            if stripped.startswith(("{", "[")):
                 try:
-                    path = Path(raw_path).resolve(strict=True)
-                    workflow = (
-                        self.settings.data_root / "tenants" / str(user_id) / "workflow"
-                    ).resolve(strict=True)
-                except (FileNotFoundError, OSError):
+                    json.loads(text)
+                except (json.JSONDecodeError, ValueError):
+                    pass
+                else:
                     continue
-                if path in seen or not path.is_file() or not path.is_relative_to(workflow):
-                    continue
-                relative = path.relative_to(self.settings.data_root.resolve())
-                if _has_symlink_component(self.settings.data_root.resolve(), relative):
-                    continue
-                seen.add(path)
-                digest, size = await asyncio.to_thread(self._digest_file, path)
-                content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
-                artifact_id = uuid5(NAMESPACE_URL, f"{user_id}:{relative.as_posix()}")
-                object_key = f"tenants/{user_id}/artifacts/{artifact_id}"
-                await self._upload_private(path, object_key, content_type, digest)
-                await self.db.upsert_artifact(
-                    artifact_id=artifact_id,
-                    user_id=user_id,
-                    job_id=job_id,
-                    filename=path.name,
-                    content_type=content_type,
-                    size_bytes=size,
-                    sha256=digest,
-                    local_path=relative.as_posix(),
-                    object_key=object_key,
-                )
+            raw_paths.update(
+                match.group(0).rstrip(TRAILING_PATH_PUNCTUATION)
+                for match in path_pattern.finditer(text)
+            )
+
+        for raw_path in raw_paths:
+            try:
+                path = Path(raw_path).resolve(strict=True)
+            except (FileNotFoundError, OSError):
+                continue
+            if path in seen or not path.is_file() or not path.is_relative_to(tenant_root):
+                continue
+            relative = path.relative_to(self.settings.data_root.resolve())
+            if _has_symlink_component(self.settings.data_root.resolve(), relative):
+                continue
+            seen.add(path)
+            digest, size = await asyncio.to_thread(self._digest_file, path)
+            content_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+            artifact_id = uuid5(NAMESPACE_URL, f"{user_id}:{relative.as_posix()}")
+            object_key = f"tenants/{user_id}/artifacts/{artifact_id}"
+            await self._upload_private(path, object_key, content_type, digest)
+            await self.db.upsert_artifact(
+                artifact_id=artifact_id,
+                user_id=user_id,
+                job_id=job_id,
+                filename=path.name,
+                content_type=content_type,
+                size_bytes=size,
+                sha256=digest,
+                local_path=relative.as_posix(),
+                object_key=object_key,
+            )
 
     async def restore_tenant_cache(self, user_id: UUID) -> None:
         if self._s3 is None:
@@ -565,7 +605,7 @@ class StorageService:
     async def _wait_for_artifact_tasks(self, user_id: UUID) -> None:
         tasks = [task for task, owner in self._task_users.items() if owner == user_id]
         if tasks:
-            await asyncio.gather(*tasks)
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     async def _upload_runtime_snapshot(
         self, tenant_root: Path, prefix: str

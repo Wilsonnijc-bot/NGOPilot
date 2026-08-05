@@ -29,12 +29,16 @@ class CacheDatabase:
     def __init__(self, uploads=None, artifact=None):
         self.uploads = uploads or []
         self.artifact = artifact
+        self.artifacts: dict[str, dict[str, object]] = {}
 
     async def ready_uploads_for_user(self, user_id):
         return self.uploads
 
     async def artifact_for_local_path(self, user_id, local_path):
-        return self.artifact
+        return self.artifact or self.artifacts.get(local_path)
+
+    async def upsert_artifact(self, **values):
+        self.artifacts[str(values["local_path"])] = values
 
 
 class MemoryS3:
@@ -217,6 +221,37 @@ async def test_artifact_url_remains_available_after_local_cache_eviction(setting
     result = await service.artifact_download_url(user_id, relative.as_posix())
 
     assert result["filename"] == "roster.xlsx"
+    assert result["url"].startswith("https://s3.example.test/")
+
+
+@pytest.mark.asyncio
+async def test_agent_text_file_path_is_mirrored_before_immediate_download(settings) -> None:
+    user_id = uuid4()
+    relative = Path("tenants") / str(user_id) / "generated report.xlsx"
+    path = settings.data_root / relative
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b"generated workbook")
+    database = CacheDatabase()
+    service = StorageService(settings, database)
+    service._s3 = MemoryS3()
+
+    service.schedule_artifact_mirror(
+        user_id,
+        {
+            "params": {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": f"Generated file:\n{path}.",
+                    }
+                ]
+            }
+        },
+    )
+    result = await service.artifact_download_url(user_id, str(path))
+
+    assert result["filename"] == "generated report.xlsx"
+    assert relative.as_posix() in database.artifacts
     assert result["url"].startswith("https://s3.example.test/")
 
 

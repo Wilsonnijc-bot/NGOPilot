@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, type RenderOptions } from '@testing-library/react';
+import { fireEvent, render, type RenderOptions } from '@testing-library/react';
 import { screen, waitFor } from '@testing-library/dom';
 import MarkdownContent from './MarkdownContent';
 import { IntlTestWrapper } from '../i18n/test-utils';
@@ -14,6 +14,55 @@ vi.mock('./icons', () => ({
 }));
 
 describe('MarkdownContent', () => {
+  describe('Cloud artifact links', () => {
+    it('replaces a tenant file path in assistant prose with a download link', async () => {
+      const path =
+        '/data/tenants/e6300d72-5803-4b89-b56d-d63da2934748/workflow/jobs/job-1/outputs/visit report.xlsx';
+      const openExternal = vi.fn(() => Promise.resolve());
+      const originalAppConfig = window.appConfig;
+      const originalOpenExternal = window.electron.openExternal;
+      window.appConfig = {
+        ...originalAppConfig,
+        get: vi.fn((key: string) => (key === 'NGOPILOT_CLOUD' ? true : undefined)),
+      };
+      window.electron.openExternal = openExternal;
+
+      try {
+        const { container } = renderWithIntl(
+          <MarkdownContent content={`Exported file:\n${path}`} />
+        );
+        const link = await screen.findByRole('link', { name: 'Download visit report.xlsx' });
+
+        expect(link).toHaveAttribute('href', path);
+        expect(link).toHaveTextContent('visit report.xlsx');
+        expect(container).not.toHaveTextContent(path);
+
+        fireEvent.click(link);
+        expect(openExternal).toHaveBeenCalledWith(path);
+      } finally {
+        window.appConfig = originalAppConfig;
+        window.electron.openExternal = originalOpenExternal;
+      }
+    });
+
+    it('leaves tenant paths as text outside the cloud app', async () => {
+      const path = '/data/tenants/user/workflow/jobs/job-1/outputs/visit.xlsx';
+      const originalAppConfig = window.appConfig;
+      window.appConfig = {
+        ...originalAppConfig,
+        get: vi.fn(() => false),
+      };
+
+      try {
+        const { container } = renderWithIntl(<MarkdownContent content={path} />);
+        await waitFor(() => expect(container).toHaveTextContent(path));
+        expect(container.querySelector('[data-artifact-path]')).not.toBeInTheDocument();
+      } finally {
+        window.appConfig = originalAppConfig;
+      }
+    });
+  });
+
   describe('HTML Security Integration', () => {
     it('renders safe markdown content normally', async () => {
       const content = `# Test Title

@@ -21,6 +21,7 @@ import type { ContentBlock } from '../types/message';
 import McpAppRenderer from './McpApps/McpAppRenderer';
 import ToolApprovalButtons from './ToolApprovalButtons';
 import { defineMessages, useIntl } from '../i18n';
+import { ArtifactText } from './ArtifactPathLink';
 
 type LoadingStatus = 'loading' | 'success' | 'error';
 
@@ -996,7 +997,7 @@ function LiveOutputView({ output }: { output: string }) {
     >
       <div ref={outputRef} className="max-h-[20rem] overflow-y-auto px-4 py-3">
         <pre className="font-mono text-xs text-textSubtle whitespace-pre-wrap break-words">
-          {output}
+          <ArtifactText text={output} />
         </pre>
       </div>
     </ToolCallExpandable>
@@ -1025,7 +1026,7 @@ function ToolResultView({ result, isStartExpanded }: ToolResultViewProps) {
       <div className="pl-4 pr-4 py-4">
         {hasText(result) && (
           <pre className="font-mono text-xs whitespace-pre-wrap max-w-full overflow-x-auto">
-            {result.text.trim()}
+            <ArtifactText text={result.text.trim()} />
           </pre>
         )}
         {hasImage(result) && (
@@ -1040,7 +1041,9 @@ function ToolResultView({ result, isStartExpanded }: ToolResultViewProps) {
           />
         )}
         {hasResource(result) && (
-          <pre className="font-sans text-sm">{JSON.stringify(result, null, 2)}</pre>
+          <pre className="font-sans text-sm">
+            <ArtifactText text={JSON.stringify(result, null, 2)} />
+          </pre>
         )}
       </div>
     </ToolCallExpandable>

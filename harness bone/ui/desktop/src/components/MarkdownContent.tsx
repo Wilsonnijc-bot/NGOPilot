@@ -31,6 +31,12 @@ import { wrapHTMLInCodeBlock } from '../utils/htmlSecurity';
 import { isProtocolSafe, getProtocol, BLOCKED_PROTOCOLS } from '../utils/urlSecurity';
 import { ConfirmationModal } from './ui/ConfirmationModal';
 import { defineMessages, useIntl } from '../i18n';
+import { ArtifactLinkList, ArtifactPathLink } from './ArtifactPathLink';
+import {
+  artifactDownloadsEnabled,
+  findArtifactPaths,
+  isArtifactPath,
+} from '../utils/artifactPaths';
 
 const i18n = defineMessages({
   copyCode: {
@@ -75,6 +81,51 @@ interface MarkdownContentProps {
   content: string;
   className?: string;
 }
+
+interface MarkdownAstNode {
+  type: string;
+  value?: string;
+  url?: string;
+  title?: string | null;
+  children?: MarkdownAstNode[];
+}
+
+function replaceArtifactTextNodes(node: MarkdownAstNode): void {
+  if (!node.children || node.type === 'link' || node.type === 'linkReference') return;
+
+  node.children = node.children.flatMap((child) => {
+    if (child.type !== 'text' || typeof child.value !== 'string') {
+      replaceArtifactTextNodes(child);
+      return [child];
+    }
+
+    const matches = findArtifactPaths(child.value);
+    if (matches.length === 0) return [child];
+
+    const replacements: MarkdownAstNode[] = [];
+    let cursor = 0;
+    for (const match of matches) {
+      if (match.start > cursor) {
+        replacements.push({ type: 'text', value: child.value.slice(cursor, match.start) });
+      }
+      replacements.push({
+        type: 'link',
+        url: match.path,
+        title: match.path,
+        children: [{ type: 'text', value: match.filename }],
+      });
+      cursor = match.end;
+    }
+    if (cursor < child.value.length) {
+      replacements.push({ type: 'text', value: child.value.slice(cursor) });
+    }
+    return replacements;
+  });
+}
+
+const remarkArtifactLinks = () => (tree: unknown) => {
+  if (artifactDownloadsEnabled()) replaceArtifactTextNodes(tree as MarkdownAstNode);
+};
 
 // Memoized CodeBlock component to prevent re-rendering when props haven't changed
 const CodeBlock = memo(function CodeBlock({
@@ -161,7 +212,10 @@ const CodeBlock = memo(function CodeBlock({
       >
         {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
       </button>
-      <div className="w-full overflow-x-auto">{memoizedSyntaxHighlighter}</div>
+      <div className="w-full overflow-x-auto">
+        <ArtifactLinkList text={children} />
+        {memoizedSyntaxHighlighter}
+      </div>
     </div>
   );
 });
@@ -172,6 +226,10 @@ const MarkdownCode = memo(
     ref: React.Ref<HTMLElement>
   ) {
     const match = /language-(\w+)/.exec(className || '');
+    if (inline && artifactDownloadsEnabled() && isArtifactPath(String(children))) {
+      return <ArtifactPathLink path={String(children)} />;
+    }
+
     return !inline && match ? (
       <CodeBlock language={match[1]}>{String(children).replace(/\n$/, '')}</CodeBlock>
     ) : (
@@ -258,7 +316,12 @@ const MarkdownContent = memo(function MarkdownContent({
       >
         <ReactMarkdown
           urlTransform={customUrlTransform}
-          remarkPlugins={[remarkGfm, remarkBreaks, [remarkMath, { singleDollarTextMath: false }]]}
+          remarkPlugins={[
+            remarkGfm,
+            remarkBreaks,
+            [remarkMath, { singleDollarTextMath: false }],
+            remarkArtifactLinks,
+          ]}
           rehypePlugins={[
             [
               rehypeKatex,
@@ -271,6 +334,9 @@ const MarkdownContent = memo(function MarkdownContent({
           ]}
           components={{
             a: (props) => {
+              if (props.href && artifactDownloadsEnabled() && isArtifactPath(props.href)) {
+                return <ArtifactPathLink path={props.href}>{props.children}</ArtifactPathLink>;
+              }
               return (
                 <a
                   {...props}
@@ -301,7 +367,9 @@ const MarkdownContent = memo(function MarkdownContent({
       <ConfirmationModal
         isOpen={pendingLink !== null}
         title={intl.formatMessage(i18n.openExternalLink)}
-        message={intl.formatMessage(i18n.openProtocolLink, { protocol: pendingLink?.protocol ?? '' })}
+        message={intl.formatMessage(i18n.openProtocolLink, {
+          protocol: pendingLink?.protocol ?? '',
+        })}
         detail={intl.formatMessage(i18n.thisWillOpen, { href: pendingLink?.href ?? '' })}
         onConfirm={handleConfirmOpen}
         onCancel={handleCancelOpen}
