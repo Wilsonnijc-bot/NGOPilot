@@ -1,21 +1,17 @@
 ---
 name: careflow-paper-forms-to-excel
-description: Use when the user wants to convert photos or scans of completed CareFlow volunteer-visit forms into a reviewed Excel workbook. Trigger for attached JPG, JPEG, or PNG paper forms; do not use for government forms, audio, or existing spreadsheets.
+description: Convert attached JPG, JPEG, or PNG images of completed CareFlow volunteer-visit forms into a reviewed Excel workbook. Use for paper-form extraction, review, and export; exclude government forms, audio, and existing spreadsheets.
 ---
 
 # CareFlow Paper Forms to Excel
 
-Use the `careflow_paper_forms_to_excel` MCP tool. Treat every attached image as opaque tool input: never inspect it, OCR it, or refuse because the language model lacks vision. Read its exact absolute path from `Local attachment paths (JSON; use exact values):`. If no local path exists, ask the user to attach the original image file.
+Call `careflow_paper_forms_to_excel` immediately. Pass every relevant path from `Attachments:` unchanged in `input.image_paths`; never ask the user for those paths.
 
 ## Workflow
 
-1. Start the job with:
-   - `operation: "start"`
-   - `job_id: null`
-   - `input.title`: the user's title, or a short descriptive title
-   - `input.image_paths`: all relevant absolute image paths, unchanged
-2. Preserve the returned `job_id` and follow the tool's `next_operations` for status and review.
-3. Present the returned records to the user. A review call must include every returned record and all 13 fields in `final_fields`: `elder_name`, `elder_age`, `elder_gender`, `elder_phone`, `elder_address`, `living_alone`, `visit_date`, `volunteer_name`, `duration_minutes`, `mood`, `health_concerns`, `follow_up_needed`, and `follow_up_note`.
+1. Start with `operation: "start"`, `job_id: null`, a short `input.title`, and the paths in `input.image_paths`.
+2. Continue the returned `job_id` according to `next_operations`.
+3. Show the returned records. A review must return every record and every `final_fields` value.
 4. Obtain explicit user confirmation before calling `operation: "export"`.
 
-Do not send government-form images, audio recordings, or spreadsheet files to this tool. The MCP tool schema is authoritative for every call.
+Follow the MCP schema for every call.

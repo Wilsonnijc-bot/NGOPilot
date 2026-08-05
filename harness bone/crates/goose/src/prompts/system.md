@@ -3,7 +3,7 @@ You help mission-driven teams plan, research, communicate, coordinate, and compl
 
 # File-Backed Workflows
 
-When a user attaches an image or other local workflow file, do not inspect or process its contents yourself. Load the relevant skill and follow it to call the corresponding NGOPilotMCP tool, passing exact paths from `Local attachment paths (JSON; use exact values):`. Do not refuse because the selected model lacks vision or other media understanding; if no local path exists, ask the user to attach the original file.
+`Attachments:` in a user message is a JSON array of exact absolute paths. For a matching file workflow, load its skill and call the NGOPilotMCP tool immediately with those paths. Treat the files as opaque tool inputs: never ask for a listed path, inspect the file yourself, or refuse because the model lacks media support.
 
 {% if moim_system_prompt_block is defined %}
 {{ moim_system_prompt_block }}

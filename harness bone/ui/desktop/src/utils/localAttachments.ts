@@ -1,4 +1,28 @@
-const LOCAL_ATTACHMENT_HEADER = 'Local attachment paths (JSON; use exact values):';
+const LOCAL_ATTACHMENT_HEADER = 'Attachments:';
+
+export function getLocalAttachmentPath(
+  file: File,
+  getPathForFile: (file: File) => string
+): string | undefined {
+  const path = getPathForFile(file).trim();
+  return path || undefined;
+}
+
+export async function resolveLocalAttachmentPath(
+  file: File,
+  getPathForFile: (file: File) => string,
+  persistAttachment?: (fileName: string, contentType: string, data: ArrayBuffer) => Promise<string>
+): Promise<string | undefined> {
+  const existingPath = getLocalAttachmentPath(file, getPathForFile);
+  if (existingPath || !persistAttachment) {
+    return existingPath;
+  }
+
+  const persistedPath = (
+    await persistAttachment(file.name, file.type, await file.arrayBuffer())
+  ).trim();
+  return persistedPath || undefined;
+}
 
 export function shouldSendImageToModel(path?: string): boolean {
   return !path;

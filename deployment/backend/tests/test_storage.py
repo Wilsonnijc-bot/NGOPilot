@@ -119,9 +119,12 @@ async def test_resolve_payload_uses_only_owned_ready_upload(settings) -> None:
         UploadDatabase({"status": "ready", "local_path": relative.as_posix()}),
     )
 
-    resolved = await service.resolve_payload(user_id, {"prompt": f"Review {placeholder}"})
+    prompt = f'Turn these forms into Excel\n\nAttachments:\n["{placeholder}"]'
+    resolved = await service.resolve_payload(user_id, {"prompt": prompt})
 
-    assert resolved == {"prompt": f"Review {path.resolve()}"}
+    assert resolved == {
+        "prompt": f'Turn these forms into Excel\n\nAttachments:\n["{path.resolve()}"]'
+    }
 
 
 def test_tenant_file_rejects_symlink_escape(settings, tmp_path: Path) -> None:

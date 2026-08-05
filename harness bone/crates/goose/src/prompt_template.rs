@@ -241,8 +241,10 @@ mod tests {
         assert!(result.is_ok(), "Should be able to render system.md");
         let rendered = result.unwrap();
         assert!(!rendered.is_empty());
-        assert!(rendered.contains("Load the relevant skill"));
-        assert!(rendered.contains("Local attachment paths (JSON; use exact values):"));
+        assert!(rendered.contains("`Attachments:`"));
+        assert!(rendered.contains("call the NGOPilotMCP tool immediately"));
+        assert!(rendered.contains("never ask for a listed path"));
+        assert!(!rendered.contains("if no local path exists"));
         assert!(!rendered.contains("careflow_paper_forms_to_excel"));
         assert!(!rendered.contains("careflow_meeting_notes"));
         assert!(!rendered.contains("careflow_government_forms"));

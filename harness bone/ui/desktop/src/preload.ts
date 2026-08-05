@@ -124,6 +124,7 @@ type ElectronAPI = {
   listFiles: (dirPath: string, extension?: string) => Promise<string[]>;
   getAllowedExtensions: () => Promise<string[]>;
   getPathForFile: (file: File) => string;
+  persistAttachment: (fileName: string, contentType: string, data: ArrayBuffer) => Promise<string>;
   setMenuBarIcon: (show: boolean) => Promise<boolean>;
   getMenuBarIconState: () => Promise<boolean>;
   setDockIcon: (show: boolean) => Promise<boolean>;
@@ -220,6 +221,8 @@ const electronAPI: ElectronAPI = {
   listFiles: (dirPath: string, extension?: string) =>
     ipcRenderer.invoke('list-files', dirPath, extension),
   getPathForFile: (file: File) => webUtils.getPathForFile(file),
+  persistAttachment: (fileName: string, contentType: string, data: ArrayBuffer) =>
+    ipcRenderer.invoke('persist-attachment', fileName, contentType, data),
   getAllowedExtensions: () => ipcRenderer.invoke('get-allowed-extensions'),
   setMenuBarIcon: (show: boolean) => ipcRenderer.invoke('set-menu-bar-icon', show),
   getMenuBarIconState: () => ipcRenderer.invoke('get-menu-bar-icon-state'),

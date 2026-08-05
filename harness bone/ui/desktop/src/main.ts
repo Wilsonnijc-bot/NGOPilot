@@ -2319,6 +2319,45 @@ ipcMain.handle('write-file', async (_event, filePath, content) => {
   }
 });
 
+ipcMain.handle('persist-attachment', async (_event, fileName, contentType, data) => {
+  const extensionByContentType: Record<string, string> = {
+    'image/gif': '.gif',
+    'image/jpeg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+  };
+  const rawName = typeof fileName === 'string' ? path.basename(fileName) : 'attachment';
+  let safeName = rawName
+    .replace(/[^A-Za-z0-9._-]+/g, '_')
+    .replace(/^\.+/, '')
+    .slice(0, 160);
+  if (!safeName) safeName = 'attachment';
+
+  const expectedExtension =
+    typeof contentType === 'string' ? extensionByContentType[contentType.toLowerCase()] : undefined;
+  if (expectedExtension && !safeName.toLowerCase().endsWith(expectedExtension)) {
+    safeName += expectedExtension;
+  }
+
+  let bytes: Uint8Array;
+  if (data instanceof ArrayBuffer) {
+    bytes = new Uint8Array(data);
+  } else if (ArrayBuffer.isView(data)) {
+    bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+  } else {
+    throw new TypeError('Attachment data must be binary');
+  }
+  if (bytes.byteLength === 0 || bytes.byteLength > 25 * 1024 * 1024) {
+    throw new RangeError('Attachment must contain between 1 byte and 25 MB');
+  }
+
+  const attachmentDir = path.join(app.getPath('temp'), 'ngopilot-attachments', crypto.randomUUID());
+  await fs.mkdir(attachmentDir, { recursive: true, mode: 0o700 });
+  const attachmentPath = path.join(attachmentDir, safeName);
+  await fs.writeFile(attachmentPath, bytes, { mode: 0o600 });
+  return attachmentPath;
+});
+
 // Enhanced file operations
 ipcMain.handle('ensure-directory', async (_event, dirPath) => {
   try {

@@ -35,7 +35,11 @@ import { getNavigationShortcutText } from '../utils/keyboardShortcuts';
 import { UserInput, ImageData } from '../types/message';
 import { compressImageDataUrl } from '../utils/conversionUtils';
 import { fetchCanonicalModelInfo } from '../utils/canonical';
-import { appendLocalAttachmentPaths, shouldSendImageToModel } from '../utils/localAttachments';
+import {
+  appendLocalAttachmentPaths,
+  resolveLocalAttachmentPath,
+  shouldSendImageToModel,
+} from '../utils/localAttachments';
 import { defineMessages, useIntl } from '../i18n';
 import TurndownService from 'turndown';
 import type { NextChatExtensionDraft } from '../utils/nextChatExtensions';
@@ -910,12 +914,23 @@ export default function ChatInput({
 
     for (const file of imageFiles) {
       const imageId = `img-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      let path: string | undefined;
+      try {
+        path = await resolveLocalAttachmentPath(
+          file,
+          window.electron.getPathForFile,
+          window.electron.persistAttachment
+        );
+      } catch (error) {
+        console.error('Failed to get pasted image path:', file.name, error);
+      }
 
       // Add the image with loading state
       newImages.push({
         id: imageId,
         dataUrl: '',
         isLoading: true,
+        path,
       });
 
       // Process the image asynchronously
@@ -1142,6 +1157,7 @@ export default function ChatInput({
       convertImagesToImageData,
       appendLocalAttachments,
       displayValue,
+      pastedImages,
       allDroppedFiles,
       handleSubmit,
       lastInterruption,
@@ -1255,7 +1271,17 @@ export default function ChatInput({
       }
 
       const uniqueId = `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const path = window.electron.getPathForFile(file);
+      const path = await resolveLocalAttachmentPath(
+        file,
+        window.electron.getPathForFile,
+        window.electron.persistAttachment
+      );
+
+      if (!path) {
+        console.error('Failed to create an attachment path for image:', file.name);
+        setIsFilePickerOpen(false);
+        return;
+      }
 
       setPastedImages((prev) => [
         ...prev,
@@ -1294,10 +1320,29 @@ export default function ChatInput({
       reader.readAsDataURL(file);
     } else {
       trackFileAttached('file');
-      const path = window.electron.getPathForFile(file);
-      const newValue = displayValue.trim() ? `${displayValue.trim()} ${path}` : path;
-      setDisplayValue(newValue);
-      setValue(newValue);
+      const path = await resolveLocalAttachmentPath(
+        file,
+        window.electron.getPathForFile,
+        window.electron.persistAttachment
+      );
+
+      if (!path) {
+        console.error('Failed to create an attachment path for file:', file.name);
+        setIsFilePickerOpen(false);
+        return;
+      }
+
+      setLocalDroppedFiles((prev) => [
+        ...prev,
+        {
+          id: `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          path,
+          name: file.name,
+          type: file.type,
+          isImage: false,
+          isLoading: false,
+        },
+      ]);
     }
 
     textAreaRef.current?.focus();

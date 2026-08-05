@@ -1,5 +1,6 @@
 import { useCallback, useState, useRef, useEffect } from 'react';
 import { compressImageDataUrl, errorMessage } from '../utils/conversionUtils';
+import { resolveLocalAttachmentPath } from '../utils/localAttachments';
 
 export interface DroppedFile {
   id: string;
@@ -45,7 +46,14 @@ export const useFileDrop = () => {
         let droppedFile: DroppedFile;
 
         try {
-          const path = window.electron.getPathForFile(file);
+          const path = await resolveLocalAttachmentPath(
+            file,
+            window.electron.getPathForFile,
+            window.electron.persistAttachment
+          );
+          if (!path) {
+            throw new Error('The platform did not provide an attachment path');
+          }
           const isImage = file.type.startsWith('image/');
 
           droppedFile = {
