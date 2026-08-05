@@ -239,7 +239,14 @@ mod tests {
         let context: HashMap<String, String> = HashMap::new();
         let result = render_template("system.md", &context);
         assert!(result.is_ok(), "Should be able to render system.md");
-        assert!(!result.unwrap().is_empty());
+        let rendered = result.unwrap();
+        assert!(!rendered.is_empty());
+        assert!(rendered.contains("Load the relevant skill"));
+        assert!(rendered.contains("Local attachment paths (JSON; use exact values):"));
+        assert!(!rendered.contains("careflow_paper_forms_to_excel"));
+        assert!(!rendered.contains("careflow_meeting_notes"));
+        assert!(!rendered.contains("careflow_government_forms"));
+        assert!(!rendered.contains("roster_copilot"));
     }
 
     #[test]

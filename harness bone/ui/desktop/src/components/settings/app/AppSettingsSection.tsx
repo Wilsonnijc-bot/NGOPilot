@@ -2,15 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { defineMessages, useIntl } from '../../../i18n';
 import { Switch } from '../../ui/switch';
 import { Button } from '../../ui/button';
-import { ChevronDown, Settings } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '../../ui/dialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from '../../ui/dropdown-menu';
 import UpdateSection from './UpdateSection';
 
 import { COST_TRACKING_ENABLED, UPDATES_ENABLED } from '../../../updates';
@@ -20,7 +13,7 @@ import BlockLogoBlack from './icons/block-lockup_black.png';
 import BlockLogoWhite from './icons/block-lockup_white.png';
 import TelemetrySettings from './TelemetrySettings';
 import { trackSettingToggled } from '../../../utils/analytics';
-import type { LanguageSetting } from '../../../utils/settings';
+import { LanguageSelector } from '../../common/LanguageSelector';
 
 const i18n = defineMessages({
   appearanceTitle: { id: 'settings.appearance.title', defaultMessage: 'Appearance' },
@@ -49,7 +42,10 @@ const i18n = defineMessages({
     defaultMessage: 'Show NGOPilot in the menu bar',
   },
   dockIcon: { id: 'settings.dockIcon.title', defaultMessage: 'Dock icon' },
-  dockIconDesc: { id: 'settings.dockIcon.description', defaultMessage: 'Show NGOPilot in the dock' },
+  dockIconDesc: {
+    id: 'settings.dockIcon.description',
+    defaultMessage: 'Show NGOPilot in the dock',
+  },
   preventSleep: { id: 'settings.preventSleep.title', defaultMessage: 'Prevent Sleep' },
   preventSleepDesc: {
     id: 'settings.preventSleep.description',
@@ -71,6 +67,7 @@ const i18n = defineMessages({
     id: 'settings.language.description',
     defaultMessage: 'Choose the display language for NGOPilot',
   },
+  // Keep legacy catalog keys declared while NGOPilot exposes its two supported languages.
   languageSystem: { id: 'settings.language.systemDefault', defaultMessage: 'System Default' },
   languageEnglish: { id: 'settings.language.english', defaultMessage: 'English' },
   languageChineseSimplified: {
@@ -154,26 +151,6 @@ const i18n = defineMessages({
   close: { id: 'settings.close', defaultMessage: 'Close' },
 });
 
-const LANGUAGE_OPTIONS: Array<{ value: LanguageSetting; message: keyof typeof i18n }> = [
-  { value: 'system', message: 'languageSystem' },
-  { value: 'en', message: 'languageEnglish' },
-  { value: 'es', message: 'languageSpanish' },
-  { value: 'fr', message: 'languageFrench' },
-  { value: 'de', message: 'languageGerman' },
-  { value: 'it', message: 'languageItalian' },
-  { value: 'pt', message: 'languagePortuguese' },
-  { value: 'id', message: 'languageIndonesian' },
-  { value: 'ms', message: 'languageMalay' },
-  { value: 'vi', message: 'languageVietnamese' },
-  { value: 'hi', message: 'languageHindi' },
-  { value: 'ja', message: 'languageJapanese' },
-  { value: 'ko', message: 'languageKorean' },
-  { value: 'ru', message: 'languageRussian' },
-  { value: 'tr', message: 'languageTurkish' },
-  { value: 'zh-CN', message: 'languageChineseSimplified' },
-  { value: 'zh-TW', message: 'languageChineseTraditional' },
-];
-
 interface AppSettingsSectionProps {
   scrollToSection?: string;
 }
@@ -187,7 +164,6 @@ export default function AppSettingsSection({ scrollToSection }: AppSettingsSecti
   const [isDockSwitchDisabled, setIsDockSwitchDisabled] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [showPricing, setShowPricing] = useState(true);
-  const [language, setLanguage] = useState<LanguageSetting>('system');
   const [isDarkMode, setIsDarkMode] = useState(false);
   const updateSectionRef = useRef<HTMLDivElement>(null);
   const shouldShowUpdates = !window.appConfig.get('GOOSE_VERSION');
@@ -214,7 +190,6 @@ export default function AppSettingsSection({ scrollToSection }: AppSettingsSecti
 
   useEffect(() => {
     window.electron.getSetting('showPricing').then(setShowPricing);
-    window.electron.getSetting('language').then((value) => setLanguage(value ?? 'system'));
   }, []);
 
   useEffect(() => {
@@ -310,25 +285,7 @@ export default function AppSettingsSection({ scrollToSection }: AppSettingsSecti
     window.dispatchEvent(new CustomEvent('showPricingChanged'));
   };
 
-  const handleLanguageChange = async (value: string) => {
-    const nextLanguage = LANGUAGE_OPTIONS.find((option) => option.value === value)?.value;
-    if (!nextLanguage || nextLanguage === language) {
-      return;
-    }
-
-    setLanguage(nextLanguage);
-    try {
-      await window.electron.setSetting('language', nextLanguage);
-      window.electron.reloadApp();
-    } catch (error) {
-      console.error('Failed to update language setting:', error);
-      setLanguage(language);
-    }
-  };
-
   const intl = useIntl();
-  const selectedLanguage =
-    LANGUAGE_OPTIONS.find((option) => option.value === language) ?? LANGUAGE_OPTIONS[0];
 
   return (
     <div className="space-y-4 pr-4 pb-8 mt-1">
@@ -482,21 +439,7 @@ export default function AppSettingsSection({ scrollToSection }: AppSettingsSecti
           <CardDescription>{intl.formatMessage(i18n.languageDesc)}</CardDescription>
         </CardHeader>
         <CardContent className="pt-4 px-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger className="flex w-full max-w-[260px] items-center justify-between gap-2 rounded-md border border-border-primary bg-background-primary px-3 py-2 text-sm text-text-primary transition-colors hover:border-border-primary">
-              <span className="truncate">{intl.formatMessage(i18n[selectedLanguage.message])}</span>
-              <ChevronDown className="h-4 w-4 shrink-0" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="w-[260px]">
-              <DropdownMenuRadioGroup value={language} onValueChange={handleLanguageChange}>
-                {LANGUAGE_OPTIONS.map((option) => (
-                  <DropdownMenuRadioItem key={option.value} value={option.value}>
-                    {intl.formatMessage(i18n[option.message])}
-                  </DropdownMenuRadioItem>
-                ))}
-              </DropdownMenuRadioGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <LanguageSelector className="w-full max-w-[260px]" menuAlign="start" />
         </CardContent>
       </Card>
       <TelemetrySettings />

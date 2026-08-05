@@ -1,0 +1,4 @@
+interface:
+  display_name: "CareFlow Government Forms"
+  short_description: "Fill supported welfare forms with review"
+  default_prompt: "Use $careflow-government-forms to fill the appropriate supported welfare form."

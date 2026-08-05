@@ -23,10 +23,17 @@ export type DefaultKeyboardShortcuts = {
   [K in keyof KeyboardShortcuts]: string;
 };
 
-// prettier-ignore
-export type LanguageSetting =
-  | 'system' | 'en' | 'es' | 'fr' | 'de' | 'it' | 'pt' | 'id' | 'ms' | 'vi'
-  | 'hi' | 'ja' | 'ko' | 'ru' | 'tr' | 'zh-CN' | 'zh-TW';
+export type LanguageSetting = 'zh-HK' | 'en';
+
+export const DEFAULT_LANGUAGE_SETTING: LanguageSetting = 'zh-HK';
+
+export function isLanguageSetting(value: unknown): value is LanguageSetting {
+  return value === 'zh-HK' || value === 'en';
+}
+
+export function normalizeLanguageSetting(value: unknown): LanguageSetting {
+  return isLanguageSetting(value) ? value : DEFAULT_LANGUAGE_SETTING;
+}
 
 export interface Settings {
   // Desktop app settings
@@ -84,7 +91,7 @@ export const defaultSettings: Settings = {
   // UI preferences
   theme: 'light',
   useSystemTheme: true,
-  language: 'system',
+  language: DEFAULT_LANGUAGE_SETTING,
   responseStyle: 'concise',
   showPricing: true,
   seenAnnouncementIds: [],

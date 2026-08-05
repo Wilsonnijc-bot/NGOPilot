@@ -1347,13 +1347,13 @@
     "defaultMessage": "值"
   },
   "hub.goodAfternoon": {
-    "defaultMessage": "午安"
+    "defaultMessage": "下晝好"
   },
   "hub.goodEvening": {
-    "defaultMessage": "晚安"
+    "defaultMessage": "晚上好"
   },
   "hub.goodMorning": {
-    "defaultMessage": "早安"
+    "defaultMessage": "早晨"
   },
   "huggingFaceModelSearch.download": {
     "defaultMessage": "下載"

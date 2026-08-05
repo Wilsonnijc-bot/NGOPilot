@@ -25,6 +25,7 @@ import {
   selectNextChatExtensions,
   type NextChatExtensionDraft,
 } from '../utils/nextChatExtensions';
+import { LanguageSelector } from './common/LanguageSelector';
 
 const i18n = defineMessages({
   goodMorning: { id: 'hub.goodMorning', defaultMessage: 'Good morning' },
@@ -123,13 +124,21 @@ export default function Hub({
   return (
     <div className="flex flex-col h-full min-h-0 items-center justify-center px-6 relative">
       <div className="w-full max-w-2xl">
-        <div className="flex items-baseline gap-2 mb-1">
-          <span className="text-6xl font-light text-text-primary tracking-tight tabular-nums">
-            {time}
+        <div className="mb-5 grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 sm:grid-cols-[1fr_auto_1fr]">
+          <div className="flex min-w-0 items-baseline gap-2">
+            <span className="text-5xl font-light text-text-primary tracking-tight tabular-nums sm:text-6xl">
+              {time}
+            </span>
+            <span className="text-xl font-light text-text-secondary sm:text-2xl">{meridiem}</span>
+          </div>
+
+          <span className="justify-self-end text-lg font-medium text-text-primary sm:justify-self-center">
+            NGOPilot
           </span>
-          <span className="text-2xl font-light text-text-secondary">{meridiem}</span>
+
+          <LanguageSelector className="col-span-2 justify-self-end sm:col-span-1 sm:justify-self-end" />
         </div>
-        <p className="text-xl text-text-secondary mb-6">{greeting}</p>
+        <p className="mb-6 text-xl text-text-secondary">{greeting}</p>
 
         <ChatInputCard>
           <ChatInput

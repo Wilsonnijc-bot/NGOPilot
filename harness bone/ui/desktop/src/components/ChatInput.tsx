@@ -35,6 +35,7 @@ import { getNavigationShortcutText } from '../utils/keyboardShortcuts';
 import { UserInput, ImageData } from '../types/message';
 import { compressImageDataUrl } from '../utils/conversionUtils';
 import { fetchCanonicalModelInfo } from '../utils/canonical';
+import { appendLocalAttachmentPaths, shouldSendImageToModel } from '../utils/localAttachments';
 import { defineMessages, useIntl } from '../i18n';
 import TurndownService from 'turndown';
 import type { NextChatExtensionDraft } from '../utils/nextChatExtensions';
@@ -63,6 +64,7 @@ interface PastedImage {
   id: string;
   dataUrl: string;
   isLoading: boolean;
+  path?: string;
   error?: string;
 }
 
@@ -638,7 +640,7 @@ export default function ChatInput({
   // config model is the fallback for Hub/no-session contexts)
   useEffect(() => {
     loadProviderDetails();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [effectiveModel, effectiveProvider, configModel, configProvider]);
 
   // Handle token usage alerts
@@ -664,7 +666,7 @@ export default function ChatInput({
       });
     }
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [totalTokens, tokenLimit, isTokenLimitLoaded, isLoading, addAlert, clearAlerts]);
 
   // Cleanup effect for component unmount - prevent memory leaks
@@ -775,7 +777,9 @@ export default function ChatInput({
 
   const convertImagesToImageData = useCallback((): ImageData[] => {
     const pastedImageData: ImageData[] = pastedImages
-      .filter((img) => img.dataUrl && !img.error && !img.isLoading)
+      .filter(
+        (img) => shouldSendImageToModel(img.path) && img.dataUrl && !img.error && !img.isLoading
+      )
       .map((img) => {
         const matches = img.dataUrl.match(/^data:([^;]+);base64,(.+)$/);
         if (matches) {
@@ -789,7 +793,14 @@ export default function ChatInput({
       .filter((img): img is ImageData => img !== null);
 
     const droppedImageData: ImageData[] = allDroppedFiles
-      .filter((file) => file.isImage && file.dataUrl && !file.error && !file.isLoading)
+      .filter(
+        (file) =>
+          file.isImage &&
+          shouldSendImageToModel(file.path) &&
+          file.dataUrl &&
+          !file.error &&
+          !file.isLoading
+      )
       .map((file) => {
         const matches = file.dataUrl!.match(/^data:([^;]+);base64,(.+)$/);
         if (matches) {
@@ -805,19 +816,20 @@ export default function ChatInput({
     return [...pastedImageData, ...droppedImageData];
   }, [pastedImages, allDroppedFiles]);
 
-  const appendDroppedFilePaths = useCallback(
+  const appendLocalAttachments = useCallback(
     (text: string): string => {
-      const droppedFilePaths = allDroppedFiles
-        .filter((file) => !file.isImage && !file.error && !file.isLoading)
-        .map((file) => file.path);
+      const localPaths = [
+        ...pastedImages
+          .filter((image) => image.path && !image.error && !image.isLoading)
+          .map((image) => image.path!),
+        ...allDroppedFiles
+          .filter((file) => file.path && !file.error && !file.isLoading)
+          .map((file) => file.path),
+      ];
 
-      if (droppedFilePaths.length > 0) {
-        const pathsString = droppedFilePaths.join(' ');
-        return text ? `${text} ${pathsString}` : pathsString;
-      }
-      return text;
+      return appendLocalAttachmentPaths(text, localPaths);
     },
-    [allDroppedFiles]
+    [pastedImages, allDroppedFiles]
   );
 
   const clearInputState = useCallback(() => {
@@ -1036,7 +1048,7 @@ export default function ChatInput({
     }
 
     const imageData = convertImagesToImageData();
-    const contentToQueue = appendDroppedFilePaths(displayValue.trim());
+    const contentToQueue = appendLocalAttachments(displayValue.trim());
 
     const interruptionMatch = detectInterruption(displayValue.trim());
 
@@ -1090,18 +1102,19 @@ export default function ChatInput({
   const performSubmit = useCallback(
     (text?: string) => {
       const imageData = convertImagesToImageData();
-      const textToSend = appendDroppedFilePaths(text ?? displayValue.trim());
+      const textToSend = appendLocalAttachments(text ?? displayValue.trim());
 
       if (textToSend || imageData.length > 0) {
         // Store original message in history
         if (displayValue.trim()) {
           LocalMessageStorage.addMessage(displayValue);
         } else {
-          const droppedFilePaths = allDroppedFiles
-            .filter((file) => !file.isImage && !file.error && !file.isLoading)
-            .map((file) => file.path);
-          if (droppedFilePaths.length > 0) {
-            LocalMessageStorage.addMessage(droppedFilePaths.join(' '));
+          const localPaths = [
+            ...pastedImages.flatMap((image) => (image.path ? [image.path] : [])),
+            ...allDroppedFiles.flatMap((file) => (file.path ? [file.path] : [])),
+          ];
+          if (localPaths.length > 0) {
+            LocalMessageStorage.addMessage(localPaths.join(' '));
           }
         }
 
@@ -1127,7 +1140,7 @@ export default function ChatInput({
     },
     [
       convertImagesToImageData,
-      appendDroppedFilePaths,
+      appendLocalAttachments,
       displayValue,
       allDroppedFiles,
       handleSubmit,
@@ -1242,6 +1255,7 @@ export default function ChatInput({
       }
 
       const uniqueId = `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const path = window.electron.getPathForFile(file);
 
       setPastedImages((prev) => [
         ...prev,
@@ -1249,6 +1263,7 @@ export default function ChatInput({
           id: uniqueId,
           dataUrl: '',
           isLoading: true,
+          path,
           error: undefined,
         },
       ]);

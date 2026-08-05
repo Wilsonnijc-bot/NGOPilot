@@ -16,29 +16,18 @@ const defaultSettings: Record<string, unknown> = {
   externalGoosed: { enabled: true, url: "", secret: "" },
   theme: "light",
   useSystemTheme: true,
-  language: "system",
+  language: "zh-HK",
   responseStyle: "concise",
   showPricing: false,
   seenAnnouncementIds: [],
 };
 
-const appConfig: Record<string, unknown> = {
-  GOOSE_DEFAULT_PROVIDER: import.meta.env.VITE_GOOSE_DEFAULT_PROVIDER || "openrouter",
-  GOOSE_DEFAULT_MODEL:
-    import.meta.env.VITE_GOOSE_DEFAULT_MODEL || "deepseek/deepseek-v4-flash",
-  GOOSE_PREDEFINED_MODELS: import.meta.env.VITE_GOOSE_PREDEFINED_MODELS || undefined,
-  GOOSE_WORKING_DIR: import.meta.env.VITE_GOOSE_WORKING_DIR || "",
-  GOOSE_PATH_ROOT: "",
-  GOOSE_LOCALE: undefined,
-  GOOSE_DISABLE_NOSTR_SHARING: true,
-  GOOSE_VERSION: "1.45.0",
-  NGOPILOT_CLOUD: true,
-};
-
 function readSettings(): Record<string, unknown> {
   try {
     const value = JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}");
-    return { ...defaultSettings, ...value };
+    const settings = { ...defaultSettings, ...value };
+    settings.language = settings.language === "en" ? "en" : "zh-HK";
+    return settings;
   } catch {
     return { ...defaultSettings };
   }
@@ -47,6 +36,19 @@ function readSettings(): Record<string, unknown> {
 function writeSettings(settings: Record<string, unknown>): void {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
 }
+
+const appConfig: Record<string, unknown> = {
+  GOOSE_DEFAULT_PROVIDER: import.meta.env.VITE_GOOSE_DEFAULT_PROVIDER || "openrouter",
+  GOOSE_DEFAULT_MODEL:
+    import.meta.env.VITE_GOOSE_DEFAULT_MODEL || "deepseek/deepseek-v4-flash",
+  GOOSE_PREDEFINED_MODELS: import.meta.env.VITE_GOOSE_PREDEFINED_MODELS || undefined,
+  GOOSE_WORKING_DIR: import.meta.env.VITE_GOOSE_WORKING_DIR || "",
+  GOOSE_PATH_ROOT: "",
+  GOOSE_LOCALE: readSettings().language,
+  GOOSE_DISABLE_NOSTR_SHARING: true,
+  GOOSE_VERSION: "1.45.0",
+  NGOPILOT_CLOUD: true,
+};
 
 function platform(): string {
   const value = navigator.userAgent.toLowerCase();

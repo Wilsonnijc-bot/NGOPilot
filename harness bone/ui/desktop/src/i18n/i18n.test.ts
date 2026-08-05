@@ -40,6 +40,12 @@ describe('getLocale', () => {
     expect(getLocale()).toEqual({ locale: 'en', messageLocale: 'en' });
   });
 
+  it('uses the Traditional Chinese catalog with Hong Kong formatting for Cantonese', () => {
+    mockAppConfig({ GOOSE_LOCALE: 'zh-HK' });
+    vi.stubGlobal('navigator', { languages: ['en'] });
+    expect(getLocale()).toEqual({ locale: 'zh-HK', messageLocale: 'zh-TW' });
+  });
+
   it('preserves regional tag from GOOSE_LOCALE', () => {
     mockAppConfig({ GOOSE_LOCALE: 'en-GB' });
     vi.stubGlobal('navigator', { languages: ['xx-XX'] });

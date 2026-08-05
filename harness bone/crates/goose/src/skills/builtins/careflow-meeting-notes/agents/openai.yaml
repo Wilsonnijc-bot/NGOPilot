@@ -1,0 +1,4 @@
+interface:
+  display_name: "CareFlow Meeting Notes"
+  short_description: "Create reviewed notes from audio and DOCX"
+  default_prompt: "Use $careflow-meeting-notes to create reviewed notes from this audio and template."

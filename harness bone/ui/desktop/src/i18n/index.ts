@@ -67,8 +67,17 @@ export function getLocale(): { locale: string; messageLocale: string } {
     const normalized = rawTag.replace(/_/g, '-');
     const tag = resolveChineseAlias(normalized);
 
-    // Exact match first
-    if (SUPPORTED_LOCALE_SET.has(tag)) return { locale: tag, messageLocale: tag };
+    // Exact message-catalog match. Preserve the requested regional locale for
+    // formatting when an alias such as zh-HK resolves to the zh-TW catalog.
+    if (SUPPORTED_LOCALE_SET.has(tag)) {
+      let locale = tag;
+      try {
+        [locale] = Intl.getCanonicalLocales(normalized);
+      } catch {
+        // Alias is valid even if the original tag is not.
+      }
+      return { locale, messageLocale: tag };
+    }
 
     // Try base language (e.g. "pt-BR" → "pt") for the catalog, but keep the
     // full regional tag for formatting so date/number output respects the region.

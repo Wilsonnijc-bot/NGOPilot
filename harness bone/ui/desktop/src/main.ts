@@ -37,7 +37,7 @@ import { addRecentDir, loadRecentDirs } from './utils/recentDirs';
 import { formatAppName, errorMessage, formatErrorForLogging } from './utils/conversionUtils';
 import { isRetiredGooseChatApp } from './utils/retiredApps';
 import type { Settings, SettingKey } from './utils/settings';
-import { defaultSettings, getKeyboardShortcuts } from './utils/settings';
+import { defaultSettings, getKeyboardShortcuts, isLanguageSetting } from './utils/settings';
 import * as crypto from 'crypto';
 import * as yaml from 'yaml';
 import windowStateKeeper from 'electron-window-state';
@@ -170,30 +170,6 @@ function translateMenuLabels(items: MenuItem[]): void {
 // Settings management
 const SETTINGS_FILE = path.join(app.getPath('userData'), 'settings.json');
 const STARTUP_LOGS_DIR = path.join(app.getPath('userData'), 'logs', 'startup');
-const validLanguageSettings = new Set<Settings['language']>([
-  'system',
-  'en',
-  'es',
-  'fr',
-  'de',
-  'it',
-  'pt',
-  'id',
-  'ms',
-  'vi',
-  'hi',
-  'ja',
-  'ko',
-  'ru',
-  'tr',
-  'zh-CN',
-  'zh-TW',
-]);
-
-function isValidLanguageSetting(value: unknown): value is Settings['language'] {
-  return typeof value === 'string' && validLanguageSettings.has(value as Settings['language']);
-}
-
 function getSettings(): Settings {
   if (fsSync.existsSync(SETTINGS_FILE)) {
     let stored: Partial<Settings>;
@@ -207,6 +183,7 @@ function getSettings(): Settings {
     return {
       ...defaultSettings,
       ...stored,
+      language: isLanguageSetting(stored.language) ? stored.language : defaultSettings.language,
       externalGoosed: {
         ...defaultSettings.externalGoosed,
         ...(stored.externalGoosed ?? {}),
@@ -228,7 +205,7 @@ function updateSettings(modifier: (settings: Settings) => void): void {
 
 function getConfiguredGooseLocale(): string | undefined {
   const language = getSettings().language;
-  if (isValidLanguageSetting(language) && language !== 'system') {
+  if (isLanguageSetting(language)) {
     return language;
   }
 
@@ -1189,7 +1166,9 @@ const createChat = async (
         localCertificateTrust.trust.fingerprint !== localCertFingerprint
       ) {
         await gooseServeResult.cleanup();
-        throw new Error('NGOPilot local service TLS certificate fingerprint did not match readiness probe');
+        throw new Error(
+          'NGOPilot local service TLS certificate fingerprint did not match readiness probe'
+        );
       }
       localCertificateTrust.trust.fingerprint = localCertFingerprint;
     } catch (error) {
@@ -1957,7 +1936,7 @@ ipcMain.handle('set-setting', (_event, key: SettingKey, value: unknown) => {
     return;
   }
 
-  if (key === 'language' && !isValidLanguageSetting(value)) {
+  if (key === 'language' && !isLanguageSetting(value)) {
     console.error(`Invalid language setting rejected: ${String(value)}`);
     return;
   }

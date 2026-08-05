@@ -1,0 +1,4 @@
+interface:
+  display_name: "Roster Copilot"
+  short_description: "Build and review a weekly NGO roster"
+  default_prompt: "Use $roster-copilot to build and review this weekly roster."
