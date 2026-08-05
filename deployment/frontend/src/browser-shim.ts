@@ -40,7 +40,7 @@ function writeSettings(settings: Record<string, unknown>): void {
 const appConfig: Record<string, unknown> = {
   GOOSE_DEFAULT_PROVIDER: import.meta.env.VITE_GOOSE_DEFAULT_PROVIDER || "openrouter",
   GOOSE_DEFAULT_MODEL:
-    import.meta.env.VITE_GOOSE_DEFAULT_MODEL || "deepseek/deepseek-v4-flash",
+    import.meta.env.VITE_GOOSE_DEFAULT_MODEL || "moonshotai/kimi-k2.6",
   GOOSE_PREDEFINED_MODELS: import.meta.env.VITE_GOOSE_PREDEFINED_MODELS || undefined,
   GOOSE_WORKING_DIR: import.meta.env.VITE_GOOSE_WORKING_DIR || "",
   GOOSE_PATH_ROOT: "",

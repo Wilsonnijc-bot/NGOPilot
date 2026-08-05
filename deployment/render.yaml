@@ -13,7 +13,7 @@ services:
       - key: VITE_GOOSE_DEFAULT_PROVIDER
         value: openrouter
       - key: VITE_GOOSE_DEFAULT_MODEL
-        value: deepseek/deepseek-v4-flash
+        value: moonshotai/kimi-k2.6
     routes:
       - type: rewrite
         source: /*

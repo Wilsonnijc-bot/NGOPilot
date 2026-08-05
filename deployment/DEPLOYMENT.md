@@ -49,7 +49,7 @@ placeholders and must not be deployed literally.
 | `PUBLIC_API_URL` | Yes | Public Railway origin, HTTPS, no trailing slash |
 | `ALLOWED_ORIGINS` | Yes | Comma-separated exact Render origins; never `*` |
 | `GOOSE_PROVIDER` | Yes | `openrouter` |
-| `GOOSE_MODEL` | Yes | `deepseek/deepseek-v4-flash` |
+| `GOOSE_MODEL` | Yes | `moonshotai/kimi-k2.6` |
 | `OPENROUTER_API_KEY` | Yes | Railway secret; never a `VITE_*` variable |
 | `DATABASE_POOL_MIN_SIZE` | No | PostgreSQL pool floor; `1` is the default |
 | `DATABASE_POOL_MAX_SIZE` | No | PostgreSQL pool ceiling; `10` is the default and must be at least the floor |
@@ -95,7 +95,7 @@ cache restore recreates those links from the running image revision.
 |---|---|
 | `VITE_API_URL` | Same HTTPS origin as `PUBLIC_API_URL` |
 | `VITE_GOOSE_DEFAULT_PROVIDER` | `openrouter` |
-| `VITE_GOOSE_DEFAULT_MODEL` | `deepseek/deepseek-v4-flash` |
+| `VITE_GOOSE_DEFAULT_MODEL` | `moonshotai/kimi-k2.6` |
 
 No model, database, AWS, ACP, or object-store secret belongs in Render. Vite
 variables are public at build time.
